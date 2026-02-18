@@ -1,0 +1,65 @@
+# PokePing Configuration
+# Copy to config.local.yaml for local overrides
+
+# Discord webhook URL for sending alerts
+discord_webhook_url: ""
+
+# How often to check each retailer (seconds)
+poll_interval: 60
+
+# Request timeout (seconds)
+request_timeout: 15
+
+# User agent for requests
+user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+# Affiliate tag configs (leave empty to disable)
+affiliate:
+  amazon_tag: ""        # e.g., "pokeping-20"
+  target_tag: ""        # Target Circle partner ID
+  walmart_tag: ""       # Walmart affiliate ID
+
+# Retailer-specific settings
+retailers:
+  target:
+    enabled: true
+    poll_interval: 45   # Override global interval
+  walmart:
+    enabled: true
+    poll_interval: 45
+  amazon:
+    enabled: true
+    poll_interval: 60
+  bestbuy:
+    enabled: true
+    poll_interval: 60
+  pokemoncenter:
+    enabled: true
+    poll_interval: 30
+  gamestop:
+    enabled: true
+    poll_interval: 60
+  tcgplayer:
+    enabled: true
+    poll_interval: 90
+
+# Products to monitor
+# Each product needs at minimum a name and at least one retailer URL/ID
+products: []
+# Example:
+# - name: "Pokemon TCG Prismatic Evolutions Elite Trainer Box"
+#   urls:
+#     target: "https://www.target.com/p/-/A-12345678"
+#     walmart: "https://www.walmart.com/ip/12345678"
+#     amazon: "B0DEXAMPLE"
+#     bestbuy: "6590001"
+#     pokemoncenter: "https://www.pokemoncenter.com/product/12345"
+
+# Keyword monitoring - watch for new Pokemon TCG listings
+keywords:
+  - "pokemon tcg"
+  - "pokemon cards"
+  - "pokemon elite trainer box"
+  - "pokemon booster box"
+  - "pokemon booster bundle"
+  - "pokemon collection"

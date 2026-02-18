@@ -1,0 +1,162 @@
+"""Walmart retailer monitor.
+
+Walmart's product data can be accessed via their public-facing
+tempo/search API or by parsing the embedded __NEXT_DATA__ JSON
+on product pages.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import re
+
+from .base import RetailerMonitor, ProductResult, StockStatus
+
+logger = logging.getLogger(__name__)
+
+# Walmart's product API endpoint
+WALMART_API = "https://www.walmart.com/orchestra/home/graphql"
+
+
+def extract_product_id(url: str) -> str | None:
+    """Extract Walmart product ID from URL or raw ID.
+
+    Handles:
+      - https://www.walmart.com/ip/Product-Name/12345678
+      - https://www.walmart.com/ip/12345678
+      - 12345678
+    """
+    match = re.search(r"/ip/(?:[^/]+/)?(\d+)", url)
+    if match:
+        return match.group(1)
+    match = re.search(r"^(\d{6,})$", url.strip())
+    if match:
+        return match.group(1)
+    return None
+
+
+class WalmartMonitor(RetailerMonitor):
+    name = "walmart"
+    base_url = "https://www.walmart.com"
+
+    async def check_api(self, product_url: str, product_name: str) -> ProductResult:
+        """Check Walmart stock via their GraphQL API."""
+        product_id = extract_product_id(product_url)
+        if not product_id:
+            raise ValueError(f"Could not extract Walmart product ID from: {product_url}")
+
+        # Walmart uses a GraphQL endpoint; we can query product data
+        query = {
+            "query": """query ProductPage($itemId: String!) {
+                product(itemId: $itemId) {
+                    name
+                    availabilityStatus
+                    priceInfo { currentPrice { price priceString } }
+                    imageInfo { thumbnailUrl }
+                    canonicalUrl
+                }
+            }""",
+            "variables": {"itemId": product_id},
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-O-PLATFORM": "rweb",
+        }
+
+        data = await self.fetch_json(
+            WALMART_API, headers=headers,
+        )
+
+        product_data = data.get("data", {}).get("product", {})
+        avail = product_data.get("availabilityStatus", "NOT_AVAILABLE")
+
+        if avail == "IN_STOCK":
+            status = StockStatus.IN_STOCK
+        elif avail == "PRE_ORDER":
+            status = StockStatus.PRE_ORDER
+        else:
+            status = StockStatus.OUT_OF_STOCK
+
+        price_info = product_data.get("priceInfo", {}).get("currentPrice", {})
+        price_float = price_info.get("price")
+
+        image = product_data.get("imageInfo", {}).get("thumbnailUrl")
+        canonical = product_data.get("canonicalUrl", "")
+        page_url = f"https://www.walmart.com{canonical}" if canonical else product_url
+
+        return ProductResult(
+            retailer=self.name,
+            product_name=product_name,
+            url=page_url,
+            status=status,
+            price=price_float,
+            image_url=image,
+        )
+
+    async def check_scrape(self, product_url: str, product_name: str) -> ProductResult:
+        """Fallback: scrape Walmart product page using __NEXT_DATA__."""
+        product_id = extract_product_id(product_url)
+        url = f"https://www.walmart.com/ip/{product_id}" if product_id else product_url
+
+        soup = await self.fetch_html(url)
+        status = StockStatus.OUT_OF_STOCK
+        price_float = None
+        image_url = None
+
+        # Try parsing __NEXT_DATA__ script tag
+        next_data = soup.find("script", {"id": "__NEXT_DATA__"})
+        if next_data:
+            try:
+                data = json.loads(next_data.string)
+                product = (
+                    data.get("props", {})
+                    .get("pageProps", {})
+                    .get("initialData", {})
+                    .get("data", {})
+                    .get("product", {})
+                )
+
+                avail = product.get("availabilityStatus", "")
+                if avail == "IN_STOCK":
+                    status = StockStatus.IN_STOCK
+                elif avail == "PRE_ORDER":
+                    status = StockStatus.PRE_ORDER
+
+                price_float = (
+                    product.get("priceInfo", {})
+                    .get("currentPrice", {})
+                    .get("price")
+                )
+
+                image_url = product.get("imageInfo", {}).get("thumbnailUrl")
+            except (json.JSONDecodeError, KeyError, TypeError) as exc:
+                logger.debug("Failed to parse Walmart __NEXT_DATA__: %s", exc)
+
+        # Fallback: look for add-to-cart and out-of-stock indicators
+        if status == StockStatus.OUT_OF_STOCK:
+            add_btn = soup.find("button", string=re.compile(r"add to cart", re.I))
+            if add_btn:
+                status = StockStatus.IN_STOCK
+
+            oos = soup.find(string=re.compile(r"out of stock", re.I))
+            if oos:
+                status = StockStatus.OUT_OF_STOCK
+
+        return ProductResult(
+            retailer=self.name,
+            product_name=product_name,
+            url=url,
+            status=status,
+            price=price_float,
+            image_url=image_url,
+        )
+
+    def build_affiliate_url(self, url: str) -> str:
+        tag = self.config.get("affiliate", {}).get("walmart_tag", "")
+        if tag:
+            sep = "&" if "?" in url else "?"
+            return f"{url}{sep}wmlspartner={tag}"
+        return url
