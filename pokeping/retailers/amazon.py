@@ -105,3 +105,13 @@ class AmazonMonitor(RetailerMonitor):
             sep = "&" if "?" in url else "?"
             return f"{url}{sep}tag={tag}"
         return url
+
+    def build_atc_url(self, product_url: str) -> str | None:
+        asin = extract_asin(product_url)
+        if not asin:
+            return None
+        tag = self.config.get("affiliate", {}).get("amazon_tag", "")
+        atc = f"https://www.amazon.com/gp/aws/cart/add.html?ASIN.1={asin}&Quantity.1=1"
+        if tag:
+            atc += f"&tag={tag}"
+        return atc

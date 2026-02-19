@@ -150,3 +150,10 @@ class RetailerMonitor(abc.ABC):
     def build_affiliate_url(self, url: str) -> str:
         """Override to add affiliate tags to product URLs."""
         return url
+
+    def build_atc_url(self, product_url: str) -> str | None:
+        """Build a direct add-to-cart URL for the product.
+
+        Returns None if the retailer doesn't support direct ATC links.
+        """
+        return None

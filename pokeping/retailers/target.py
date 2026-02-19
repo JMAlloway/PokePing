@@ -155,3 +155,9 @@ class TargetMonitor(RetailerMonitor):
             sep = "&" if "?" in url else "?"
             return f"{url}{sep}afid={tag}"
         return url
+
+    def build_atc_url(self, product_url: str) -> str | None:
+        tcin = extract_tcin(product_url)
+        if not tcin:
+            return None
+        return f"https://www.target.com/co-cart-add?tcin={tcin}"

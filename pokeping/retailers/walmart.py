@@ -160,3 +160,9 @@ class WalmartMonitor(RetailerMonitor):
             sep = "&" if "?" in url else "?"
             return f"{url}{sep}wmlspartner={tag}"
         return url
+
+    def build_atc_url(self, product_url: str) -> str | None:
+        product_id = extract_product_id(product_url)
+        if not product_id:
+            return None
+        return f"https://affil.walmart.com/cart/addToCart?items={product_id}"

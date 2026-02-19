@@ -138,3 +138,9 @@ class BestBuyMonitor(RetailerMonitor):
     def build_affiliate_url(self, url: str) -> str:
         # Best Buy uses Impact Radius for affiliates; placeholder for now
         return url
+
+    def build_atc_url(self, product_url: str) -> str | None:
+        sku = extract_sku(product_url)
+        if not sku:
+            return None
+        return f"https://api.bestbuy.com/click/-/{sku}/cart"

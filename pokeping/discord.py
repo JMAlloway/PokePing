@@ -44,6 +44,8 @@ class DiscordAlerter:
         result: ProductResult,
         old_status: str,
         affiliate_url: Optional[str] = None,
+        atc_url: Optional[str] = None,
+        msrp: Optional[float] = None,
     ):
         """Send a stock alert embed to Discord."""
         if not self.webhook_url:
@@ -64,11 +66,19 @@ class DiscordAlerter:
         status_label = result.status.value.replace("_", " ").title()
         old_label = old_status.replace("_", " ").title()
 
+        # Build description with ATC and product links
+        desc_lines = []
+        if atc_url and result.status in (StockStatus.IN_STOCK, StockStatus.PRE_ORDER):
+            desc_lines.append(f"[**Add to Cart →**]({atc_url})")
+        desc_lines.append(f"[**Product Page →**]({link})")
+        description = "\n".join(desc_lines)
+
         # Build embed
         embed = {
             "title": f"{icon} {result.product_name}",
-            "url": link,
+            "url": atc_url or link,
             "color": color,
+            "description": description,
             "fields": [
                 {
                     "name": "Status",
@@ -87,20 +97,24 @@ class DiscordAlerter:
             ),
         }
 
+        # Price field with MSRP comparison
         if result.price is not None:
+            price_str = f"${result.price:.2f}"
+            if msrp:
+                if result.price <= msrp * 1.05:
+                    price_str += f" (MSRP ${msrp:.2f}) ✅"
+                else:
+                    price_str += f" (MSRP ${msrp:.2f}) ⚠️"
             embed["fields"].append(
-                {
-                    "name": "Price",
-                    "value": f"${result.price:.2f}",
-                    "inline": True,
-                }
+                {"name": "Price", "value": price_str, "inline": True}
+            )
+        elif msrp:
+            embed["fields"].append(
+                {"name": "MSRP", "value": f"${msrp:.2f}", "inline": True}
             )
 
         if result.image_url:
             embed["thumbnail"] = {"url": result.image_url}
-
-        # Add direct link button text
-        embed["description"] = f"[**Buy Now →**]({link})"
 
         payload = {
             "username": "PokePing",

@@ -85,10 +85,14 @@ class MonitorEngine:
                 urls = product.get("urls", {})
                 name = product.get("name", "Unknown Product")
 
+                msrp = product.get("msrp")
+
                 for retailer, url in urls.items():
                     monitor = self._monitors.get(retailer)
                     if monitor:
-                        tasks.append(self._check_product(monitor, url, name))
+                        tasks.append(
+                            self._check_product(monitor, url, name, msrp=msrp)
+                        )
 
             if tasks:
                 results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -106,7 +110,11 @@ class MonitorEngine:
             await asyncio.sleep(sleep_time)
 
     async def _check_product(
-        self, monitor: RetailerMonitor, product_url: str, product_name: str
+        self,
+        monitor: RetailerMonitor,
+        product_url: str,
+        product_name: str,
+        msrp: float | None = None,
     ):
         """Check a single product and send alert if status changed."""
         try:
@@ -152,6 +160,18 @@ class MonitorEngine:
             # Went out of stock — optionally alert
             should_alert = True
 
+        # MSRP price filtering: suppress in-stock alerts for above-MSRP prices
+        if should_alert and msrp and result.price:
+            if result.price > msrp * 1.05:  # 5% tolerance
+                logger.info(
+                    "Suppressing alert for %s @ %s: $%.2f exceeds MSRP $%.2f",
+                    product_name,
+                    monitor.name,
+                    result.price,
+                    msrp,
+                )
+                should_alert = False
+
         if should_alert:
             logger.info(
                 "Status change: %s @ %s: %s → %s",
@@ -162,8 +182,11 @@ class MonitorEngine:
             )
 
             affiliate_url = monitor.build_affiliate_url(result.url)
+            atc_url = monitor.build_atc_url(product_url)
 
-            await self._alerter.send_alert(result, old_status, affiliate_url)
+            await self._alerter.send_alert(
+                result, old_status, affiliate_url, atc_url=atc_url, msrp=msrp
+            )
             await self.db.log_alert(
                 monitor.name,
                 product_url,

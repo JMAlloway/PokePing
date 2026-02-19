@@ -45,9 +45,11 @@ retailers:
 
 # Products to monitor
 # Each product needs at minimum a name and at least one retailer URL/ID
+# Optional: set "msrp" to filter out above-MSRP scalper prices
 products: []
 # Example:
 # - name: "Pokemon TCG Prismatic Evolutions Elite Trainer Box"
+#   msrp: 49.99   # Only alert when price is at or below MSRP
 #   urls:
 #     target: "https://www.target.com/p/-/A-12345678"
 #     walmart: "https://www.walmart.com/ip/12345678"
