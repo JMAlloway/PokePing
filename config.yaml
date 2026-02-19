@@ -51,6 +51,42 @@ retailers:
   barnesnoble:
     enabled: true
     poll_interval: 60
+  macys:
+    enabled: true
+    poll_interval: 60
+  hottopic:
+    enabled: true
+    poll_interval: 60
+  booksamillion:
+    enabled: true
+    poll_interval: 60
+  lowes:
+    enabled: true
+    poll_interval: 90
+  acehardware:
+    enabled: true
+    poll_interval: 90
+  menards:
+    enabled: true
+    poll_interval: 90
+  dicks:
+    enabled: true
+    poll_interval: 90
+  buckscardshop:
+    enabled: true
+    poll_interval: 60
+  forgeandfire:
+    enabled: true
+    poll_interval: 60
+  amenerds:
+    enabled: true
+    poll_interval: 60
+  pokene:
+    enabled: true
+    poll_interval: 60
+  rarecandy:
+    enabled: true
+    poll_interval: 60
 
 # Products to monitor
 # Each product needs at minimum a name and at least one retailer URL/ID
@@ -67,15 +103,20 @@ products:
       gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-phantasmal-flames-booster-bundle/20027390.html"
       tcgplayer: "https://www.tcgplayer.com/product/654160/pokemon-me02-phantasmal-flames-phantasmal-flames-booster-bundle"
       barnesnoble: "https://www.barnesandnoble.com/w/pokemon-mega-evolution-s1-booster-bundle-box-pokemon/1148312555"
-      # costco: Not listed yet — check back when Costco lists Pokemon ME2 bundles
-      # samsclub: Not listed yet — check back when Sam's Club lists Pokemon ME2 bundles
-
-# Example of adding more products:
-# - name: "Pokemon TCG Prismatic Evolutions Elite Trainer Box"
-#   msrp: 49.99
-#   urls:
-#     target: "https://www.target.com/p/-/A-12345678"
-#     walmart: "https://www.walmart.com/ip/12345678"
+      hottopic: "https://www.hottopic.com/product/pokemon-tcg-mega-evolution-phantasmal-flames-booster-bundle/35613832.html"
+      booksamillion: "https://www.booksamillion.com/p/Pokemon-TCG-Mega-Evolutions-Phantasmal/Pok%C3%A9mon/F196214143371"
+      pokene: "https://www.pokene.com/category/phantasmal-flames"
+      forgeandfire: "https://forgeandfiregaming.com/phantasmal-flames/"
+      # costco: Not listed yet
+      # samsclub: Not listed yet
+      # macys: Not listed — Macy's doesn't carry Pokemon TCG booster bundles
+      # lowes: Not listed — check back for seasonal drops
+      # acehardware: Not listed — check back for seasonal drops
+      # menards: Not listed — check back for seasonal drops
+      # dicks: Not listed — check back for seasonal drops
+      # buckscardshop: Check buckscardshop.com/products/c6/poke-mon for availability
+      # amenerds: Check amenerds.com for availability
+      # rarecandy: Check rarecandy.com/d/pokemon for availability
 
 # Keyword monitoring - watch for new Pokemon TCG listings
 keywords:

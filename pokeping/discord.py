@@ -31,6 +31,18 @@ RETAILER_ICONS = {
     "costco": "🏪",
     "samsclub": "🛒",
     "barnesnoble": "📚",
+    "macys": "🛍️",
+    "hottopic": "🔥",
+    "booksamillion": "📖",
+    "lowes": "🔧",
+    "acehardware": "🔨",
+    "menards": "🏠",
+    "dicks": "⚽",
+    "buckscardshop": "🦌",
+    "forgeandfire": "🔥",
+    "amenerds": "🤓",
+    "pokene": "🗺️",
+    "rarecandy": "🍬",
 }
 
 
