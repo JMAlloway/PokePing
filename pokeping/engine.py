@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 
 import aiohttp
@@ -11,7 +12,8 @@ import aiohttp
 from .db import StateDB
 from .discord import DiscordAlerter
 from .retailers import ALL_MONITORS
-from .retailers.base import RetailerMonitor, StockStatus
+from .retailers.base import RetailerMonitor, StockStatus, ProductResult
+from .utils.proxy import ProxyRotator
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,8 @@ class MonitorEngine:
         self._running = False
         # Track pending status changes: (retailer, product_url) -> (new_status, consecutive_count)
         self._pending_changes: dict[tuple[str, str], tuple[str, int]] = {}
+        # Compiled keyword patterns from config
+        self._keyword_patterns: list[re.Pattern] = []
 
     async def start(self):
         """Initialize connections and start the monitoring loop."""
@@ -43,19 +47,37 @@ class MonitorEngine:
             self._session,
         )
 
+        # Initialize proxy rotator
+        proxy_rotator = ProxyRotator.from_config(self.config)
+
+        # Compile keyword patterns for monitoring
+        keywords = self.config.get("keywords", [])
+        for kw in keywords:
+            try:
+                self._keyword_patterns.append(
+                    re.compile(re.escape(kw), re.IGNORECASE)
+                )
+            except re.error as exc:
+                logger.warning("Invalid keyword pattern %r: %s", kw, exc)
+        if self._keyword_patterns:
+            logger.info("Keyword monitoring active: %d keywords", len(self._keyword_patterns))
+
         # Initialize enabled retailer monitors
         retailers_config = self.config.get("retailers", {})
         for name, monitor_cls in ALL_MONITORS.items():
             retailer_conf = retailers_config.get(name, {})
             if retailer_conf.get("enabled", True):
-                self._monitors[name] = monitor_cls(self._session, self.config)
+                self._monitors[name] = monitor_cls(
+                    self._session, self.config, proxy_rotator=proxy_rotator
+                )
                 logger.info("Enabled monitor: %s", name)
 
         products = self.config.get("products", [])
         logger.info(
-            "PokePing starting: %d products, %d retailers",
+            "PokePing starting: %d products, %d retailers, %d proxies",
             len(products),
             len(self._monitors),
+            proxy_rotator.active_count,
         )
 
         await self._alerter.send_startup_message(
@@ -268,4 +290,30 @@ class MonitorEngine:
                 old_status,
                 new_status,
                 result.price,
+            )
+
+        # Keyword monitoring: flag products whose name matches any keyword
+        self._check_keywords(result)
+
+    def _check_keywords(self, result: ProductResult) -> None:
+        """Log when a product matches configured keyword patterns.
+
+        This allows discovery of new listings that match keywords even
+        if they aren't in the explicit product list (e.g. retailer
+        search results, new product drops).
+        """
+        if not self._keyword_patterns:
+            return
+
+        matched = [
+            pat.pattern for pat in self._keyword_patterns
+            if pat.search(result.product_name)
+        ]
+        if matched:
+            logger.info(
+                "Keyword match for %s @ %s: matched %s (status: %s)",
+                result.product_name,
+                result.retailer,
+                matched,
+                result.status.value,
             )

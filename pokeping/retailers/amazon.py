@@ -2,16 +2,31 @@
 
 Amazon doesn't have a public stock API, so we rely on scraping.
 The affiliate integration uses Amazon Associates tag parameter.
+
+Anti-bot hardening:
+  - Randomized user-agent per request (via base class)
+  - Proxy rotation (via base class)
+  - Referer header to simulate organic navigation
+  - CAPTCHA / bot-page detection returns UNKNOWN (not false OOS)
+  - Cookie jar maintained for session continuity
+  - Random delays between requests to reduce fingerprinting
 """
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
+import random
 import re
 
 from .base import RetailerMonitor, ProductResult, StockStatus
 
 logger = logging.getLogger(__name__)
+
+# Random delay range (seconds) before each Amazon request to appear more human
+_MIN_DELAY = 0.5
+_MAX_DELAY = 2.0
 
 
 def extract_asin(url_or_asin: str) -> str | None:
@@ -33,6 +48,21 @@ def extract_asin(url_or_asin: str) -> str | None:
     return None
 
 
+def _detect_bot_block(soup) -> bool:
+    """Detect if Amazon served a CAPTCHA or anti-bot challenge page."""
+    # CAPTCHA form
+    if soup.find("form", {"action": re.compile(r"/errors/validateCaptcha")}):
+        return True
+    # "Sorry, we just need to make sure you're not a robot"
+    if soup.find(string=re.compile(r"not a robot|captcha|automated access", re.I)):
+        return True
+    # Page title signals
+    title = soup.find("title")
+    if title and "robot" in title.get_text().lower():
+        return True
+    return False
+
+
 class AmazonMonitor(RetailerMonitor):
     name = "amazon"
     base_url = "https://www.amazon.com"
@@ -42,59 +72,132 @@ class AmazonMonitor(RetailerMonitor):
         raise NotImplementedError
 
     async def check_scrape(self, product_url: str, product_name: str) -> ProductResult:
-        """Scrape Amazon product page for availability."""
+        """Scrape Amazon product page for availability.
+
+        Includes anti-bot hardening: random delay, referer spoofing,
+        bot-page detection, and multiple extraction strategies.
+        """
         asin = extract_asin(product_url)
         url = f"https://www.amazon.com/dp/{asin}" if asin else product_url
 
-        soup = await self.fetch_html(url)
+        # Random pre-request delay to look more human
+        await asyncio.sleep(random.uniform(_MIN_DELAY, _MAX_DELAY))
+
+        # Spoof referer as if we came from an Amazon search
+        extra_headers = {
+            "Referer": "https://www.amazon.com/s?k=pokemon+tcg",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        }
+
+        soup = await self.fetch_html(url, headers=extra_headers)
 
         status = StockStatus.UNKNOWN
         price_float = None
         image_url = None
 
-        # Verify we got a real product page — if Amazon served a CAPTCHA or
-        # bot-detection page, none of the expected elements will exist and we
-        # should return UNKNOWN rather than falsely reporting out-of-stock.
+        # Detect bot-block pages immediately
+        if _detect_bot_block(soup):
+            logger.warning(
+                "Amazon bot detection triggered for %s — returning UNKNOWN",
+                product_name,
+            )
+            return ProductResult(
+                retailer=self.name,
+                product_name=product_name,
+                url=url,
+                status=StockStatus.UNKNOWN,
+            )
+
+        # Verify we got a real product page
         is_product_page = soup.find("div", {"id": "dp-container"}) or soup.find(
             "div", {"id": "ppd"}
         )
 
-        # Check availability div
-        avail_div = soup.find("div", {"id": "availability"})
-        if avail_div:
-            text = avail_div.get_text(strip=True).lower()
-            if "in stock" in text:
-                status = StockStatus.IN_STOCK
-            elif "currently unavailable" in text or "out of stock" in text:
-                status = StockStatus.OUT_OF_STOCK
-            elif "pre-order" in text:
-                status = StockStatus.PRE_ORDER
+        # Strategy 1: JSON-LD structured data (most reliable when present)
+        json_ld = soup.find("script", {"type": "application/ld+json"})
+        if json_ld and json_ld.string:
+            try:
+                data = json.loads(json_ld.string)
+                if isinstance(data, list):
+                    data = data[0]
+                offers = data.get("offers", {})
+                if isinstance(offers, list):
+                    offers = offers[0] if offers else {}
+                avail = offers.get("availability", "")
+                if "InStock" in avail:
+                    status = StockStatus.IN_STOCK
+                elif "OutOfStock" in avail:
+                    status = StockStatus.OUT_OF_STOCK
+                elif "PreOrder" in avail:
+                    status = StockStatus.PRE_ORDER
+                price = offers.get("price")
+                if price:
+                    price_float = float(price)
+                img = data.get("image")
+                if isinstance(img, list):
+                    image_url = img[0] if img else None
+                elif isinstance(img, str):
+                    image_url = img
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                pass
 
-        # Check for add-to-cart button as secondary signal
+        # Strategy 2: Availability div
+        if status == StockStatus.UNKNOWN:
+            avail_div = soup.find("div", {"id": "availability"})
+            if avail_div:
+                text = avail_div.get_text(strip=True).lower()
+                if "in stock" in text:
+                    status = StockStatus.IN_STOCK
+                elif "currently unavailable" in text or "out of stock" in text:
+                    status = StockStatus.OUT_OF_STOCK
+                elif "pre-order" in text:
+                    status = StockStatus.PRE_ORDER
+
+        # Strategy 3: Add-to-cart button as secondary signal
         if status == StockStatus.UNKNOWN:
             add_btn = soup.find("input", {"id": "add-to-cart-button"})
+            if not add_btn:
+                # Also check for the submit button variant
+                add_btn = soup.find("span", {"id": "submit.add-to-cart-announce"})
             if add_btn:
                 status = StockStatus.IN_STOCK
             elif is_product_page:
-                # We're on a real product page but there's no add-to-cart
+                # Real product page but no add-to-cart
                 status = StockStatus.OUT_OF_STOCK
             # else: not a real product page (CAPTCHA/bot block) → stay UNKNOWN
 
-        # Extract price
-        price_span = soup.find("span", {"class": "a-price-whole"})
-        price_frac = soup.find("span", {"class": "a-price-fraction"})
-        if price_span:
-            try:
-                whole = price_span.get_text().replace(",", "").replace(".", "").strip()
-                frac = price_frac.get_text().strip() if price_frac else "00"
-                price_float = float(f"{whole}.{frac}")
-            except ValueError:
-                pass
+        # Extract price (if not already found from JSON-LD)
+        if price_float is None:
+            price_span = soup.find("span", {"class": "a-price-whole"})
+            price_frac = soup.find("span", {"class": "a-price-fraction"})
+            if price_span:
+                try:
+                    whole = price_span.get_text().replace(",", "").replace(".", "").strip()
+                    frac = price_frac.get_text().strip() if price_frac else "00"
+                    price_float = float(f"{whole}.{frac}")
+                except ValueError:
+                    pass
+            # Fallback: corePriceDisplay
+            if price_float is None:
+                core_price = soup.find("span", {"class": "a-price", "data-a-color": "price"})
+                if core_price:
+                    offscreen = core_price.find("span", {"class": "a-offscreen"})
+                    if offscreen:
+                        match = re.search(r"\$?([\d,]+\.\d{2})", offscreen.get_text())
+                        if match:
+                            try:
+                                price_float = float(match.group(1).replace(",", ""))
+                            except ValueError:
+                                pass
 
-        # Extract image
-        img = soup.find("img", {"id": "landingImage"})
-        if img:
-            image_url = img.get("src")
+        # Extract image (if not already found from JSON-LD)
+        if not image_url:
+            img = soup.find("img", {"id": "landingImage"})
+            if not img:
+                img = soup.find("img", {"id": "imgBlkFront"})
+            if img:
+                image_url = img.get("src") or img.get("data-old-hires")
 
         return ProductResult(
             retailer=self.name,

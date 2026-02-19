@@ -10,8 +10,17 @@ poll_interval: 60
 # Request timeout (seconds)
 request_timeout: 15
 
-# User agent for requests
-user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+# User agent for requests (ignored when UA rotation is active, which is the default)
+user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+
+# Proxy configuration (optional — improves reliability for high-volume monitoring)
+# Supports HTTP, HTTPS, and SOCKS5 proxies. Rotates round-robin with dead-proxy detection.
+# Can also be set via POKEPING_PROXIES env var (comma-separated) or POKEPING_PROXY_FILE.
+proxy_list: []
+  # - "http://user:pass@proxy1.example.com:8080"
+  # - "http://user:pass@proxy2.example.com:8080"
+  # - "socks5://user:pass@proxy3.example.com:1080"
+# proxy_file: "/path/to/proxies.txt"   # One proxy per line
 
 # Affiliate tag configs (leave empty to disable)
 affiliate:

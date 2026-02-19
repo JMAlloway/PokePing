@@ -1,0 +1,22 @@
+services:
+  pokeping:
+    build: .
+    container_name: pokeping
+    restart: unless-stopped
+    environment:
+      - POKEPING_DISCORD_WEBHOOK=${POKEPING_DISCORD_WEBHOOK:-}
+      - POKEPING_POLL_INTERVAL=${POKEPING_POLL_INTERVAL:-60}
+      - POKEPING_AMAZON_TAG=${POKEPING_AMAZON_TAG:-}
+      - POKEPING_TARGET_TAG=${POKEPING_TARGET_TAG:-}
+      - POKEPING_WALMART_TAG=${POKEPING_WALMART_TAG:-}
+      - POKEPING_PROXIES=${POKEPING_PROXIES:-}
+      - POKEPING_PROXY_FILE=${POKEPING_PROXY_FILE:-}
+    volumes:
+      - pokeping-data:/app/data
+      # Uncomment to use a local config override
+      # - ./config.local.yaml:/app/config.local.yaml:ro
+      # Uncomment to mount a proxy list file
+      # - ./proxies.txt:/app/proxies.txt:ro
+
+volumes:
+  pokeping-data:
