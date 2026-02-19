@@ -20,7 +20,7 @@ proxy_list: []
   # - "http://user:pass@proxy1.example.com:8080"
   # - "http://user:pass@proxy2.example.com:8080"
   # - "socks5://user:pass@proxy3.example.com:1080"
-# proxy_file: "/path/to/proxies.txt"   # One proxy per line
+proxy_file: "proxies.txt"   # One proxy per line
 
 # Affiliate tag configs (leave empty to disable)
 affiliate:
