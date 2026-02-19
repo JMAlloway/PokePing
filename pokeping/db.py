@@ -61,6 +61,15 @@ class StateDB:
             row = await cursor.fetchone()
             return row[0] if row else None
 
+    async def get_last_price(self, retailer: str, product_url: str) -> float | None:
+        """Get the last known price for a product."""
+        async with self._db.execute(
+            "SELECT last_price FROM product_state WHERE retailer = ? AND product_url = ?",
+            (retailer, product_url),
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
+
     async def update_status(
         self,
         retailer: str,

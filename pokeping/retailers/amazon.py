@@ -52,6 +52,13 @@ class AmazonMonitor(RetailerMonitor):
         price_float = None
         image_url = None
 
+        # Verify we got a real product page — if Amazon served a CAPTCHA or
+        # bot-detection page, none of the expected elements will exist and we
+        # should return UNKNOWN rather than falsely reporting out-of-stock.
+        is_product_page = soup.find("div", {"id": "dp-container"}) or soup.find(
+            "div", {"id": "ppd"}
+        )
+
         # Check availability div
         avail_div = soup.find("div", {"id": "availability"})
         if avail_div:
@@ -68,8 +75,10 @@ class AmazonMonitor(RetailerMonitor):
             add_btn = soup.find("input", {"id": "add-to-cart-button"})
             if add_btn:
                 status = StockStatus.IN_STOCK
-            else:
+            elif is_product_page:
+                # We're on a real product page but there's no add-to-cart
                 status = StockStatus.OUT_OF_STOCK
+            # else: not a real product page (CAPTCHA/bot block) → stay UNKNOWN
 
         # Extract price
         price_span = soup.find("span", {"class": "a-price-whole"})
