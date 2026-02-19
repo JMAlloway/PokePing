@@ -66,8 +66,8 @@ class WalmartMonitor(RetailerMonitor):
             "X-O-PLATFORM": "rweb",
         }
 
-        data = await self.fetch_json(
-            WALMART_API, headers=headers,
+        data = await self.post_json(
+            WALMART_API, json_body=query, headers=headers,
         )
 
         product_data = data.get("data", {}).get("product", {})

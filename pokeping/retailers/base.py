@@ -121,6 +121,18 @@ class RetailerMonitor(abc.ABC):
             resp.raise_for_status()
             return await resp.json()
 
+    async def post_json(self, url: str, json_body: dict, **kwargs) -> dict:
+        """Helper: POST JSON to a URL and parse the response as JSON."""
+        headers = {**self._headers, **kwargs.pop("headers", {})}
+        timeout = aiohttp.ClientTimeout(
+            total=self.config.get("request_timeout", 15)
+        )
+        async with self.session.post(
+            url, json=json_body, headers=headers, timeout=timeout, **kwargs
+        ) as resp:
+            resp.raise_for_status()
+            return await resp.json()
+
     async def fetch_html(self, url: str, **kwargs) -> BeautifulSoup:
         """Helper: fetch a URL and parse as HTML."""
         headers = {**self._headers, **kwargs.pop("headers", {})}

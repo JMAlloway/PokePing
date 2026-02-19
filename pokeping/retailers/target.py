@@ -15,10 +15,10 @@ from .base import RetailerMonitor, ProductResult, StockStatus
 logger = logging.getLogger(__name__)
 
 # Target's Redsky API for product fulfillment/availability
-REDSKY_BASE = "https://redsky.target.com/redsky_aggregations/v1/web/pdp_fulfillment_v1"
+REDSKY_BASE = "https://redsky.target.com/redsky_aggregations/v1/web_platform/product_fulfillment_v1"
 
 # API key that Target's frontend uses (public, rotates occasionally)
-DEFAULT_API_KEY = "ff457966e64d5e877fdbad070f276d18ecec4a01"
+DEFAULT_API_KEY = "9f36aeafbe60771e321a7cc95a78140772ab3e96"
 
 
 def extract_tcin(url: str) -> str | None:

@@ -23,12 +23,17 @@ def extract_sku(url_or_sku: str) -> str | None:
     Handles:
       - https://www.bestbuy.com/site/product-name/6590001.p?skuId=6590001
       - https://www.bestbuy.com/site/product/6590001.p
+      - https://www.bestbuy.com/product/product-name/6590001
       - 6590001
     """
     match = re.search(r"skuId=(\d+)", url_or_sku)
     if match:
         return match.group(1)
     match = re.search(r"/(\d{7})\.p", url_or_sku)
+    if match:
+        return match.group(1)
+    # New URL format: /product/name/SKU (numeric only)
+    match = re.search(r"/product/[^/]+/(\d{7})$", url_or_sku)
     if match:
         return match.group(1)
     match = re.search(r"^(\d{7})$", url_or_sku.strip())
@@ -45,7 +50,7 @@ class BestBuyMonitor(RetailerMonitor):
         """Check Best Buy stock via their fulfillment API."""
         sku = extract_sku(product_url)
         if not sku:
-            raise ValueError(f"Could not extract Best Buy SKU from: {product_url}")
+            raise NotImplementedError(f"No numeric SKU in URL: {product_url}")
 
         api_url = (
             f"https://www.bestbuy.com/fulfillment/ship-to-home/availability"
