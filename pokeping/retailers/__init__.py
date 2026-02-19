@@ -8,6 +8,9 @@ from .bestbuy import BestBuyMonitor
 from .pokemoncenter import PokemonCenterMonitor
 from .gamestop import GameStopMonitor
 from .tcgplayer import TCGPlayerMonitor
+from .costco import CostcoMonitor
+from .samsclub import SamsClubMonitor
+from .barnesnoble import BarnesNobleMonitor
 
 ALL_MONITORS = {
     "target": TargetMonitor,
@@ -17,6 +20,9 @@ ALL_MONITORS = {
     "pokemoncenter": PokemonCenterMonitor,
     "gamestop": GameStopMonitor,
     "tcgplayer": TCGPlayerMonitor,
+    "costco": CostcoMonitor,
+    "samsclub": SamsClubMonitor,
+    "barnesnoble": BarnesNobleMonitor,
 }
 
 __all__ = [
@@ -30,5 +36,8 @@ __all__ = [
     "PokemonCenterMonitor",
     "GameStopMonitor",
     "TCGPlayerMonitor",
+    "CostcoMonitor",
+    "SamsClubMonitor",
+    "BarnesNobleMonitor",
     "ALL_MONITORS",
 ]

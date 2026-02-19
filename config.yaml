@@ -42,6 +42,15 @@ retailers:
   tcgplayer:
     enabled: true
     poll_interval: 90
+  costco:
+    enabled: true
+    poll_interval: 60
+  samsclub:
+    enabled: true
+    poll_interval: 60
+  barnesnoble:
+    enabled: true
+    poll_interval: 60
 
 # Products to monitor
 # Each product needs at minimum a name and at least one retailer URL/ID
@@ -56,6 +65,9 @@ products: []
 #     amazon: "B0DEXAMPLE"
 #     bestbuy: "6590001"
 #     pokemoncenter: "https://www.pokemoncenter.com/product/12345"
+#     costco: "https://www.costco.com/product-name.product.4000271399.html"
+#     samsclub: "https://www.samsclub.com/p/product-name/prod12345678"
+#     barnesnoble: "https://www.barnesandnoble.com/w/product-name/1234567890"
 
 # Keyword monitoring - watch for new Pokemon TCG listings
 keywords:

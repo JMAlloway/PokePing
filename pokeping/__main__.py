@@ -86,6 +86,7 @@ def add_product_interactive(config_path: str | None):
     retailers = [
         "target", "walmart", "amazon", "bestbuy",
         "pokemoncenter", "gamestop", "tcgplayer",
+        "costco", "samsclub", "barnesnoble",
     ]
 
     urls = {}

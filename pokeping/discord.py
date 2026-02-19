@@ -28,6 +28,9 @@ RETAILER_ICONS = {
     "pokemoncenter": "⚡",
     "gamestop": "🎮",
     "tcgplayer": "🃏",
+    "costco": "🏪",
+    "samsclub": "🛒",
+    "barnesnoble": "📚",
 }
 
 
