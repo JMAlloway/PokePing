@@ -121,6 +121,9 @@ products:
       gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-phantasmal-flames-elite-trainer-box/20027391.html"
       tcgplayer: "https://www.tcgplayer.com/product/654136/pokemon-me02-phantasmal-flames-phantasmal-flames-elite-trainer-box"
       barnesnoble: "https://www.barnesandnoble.com/w/pokemon-mega-evolution-s2-phantasmal-flames-elite-trainer-box-pokemon/1148578545"
+      hottopic: "https://www.hottopic.com/product/pokemon-tcg-mega-evolution-phantasmal-flames-elite-trainer-box/35621193.html"
+      booksamillion: "https://www.booksamillion.com/p/Pok%C3%A9mon-Mega-Evolution-Phantasmal-Flames/Pok%C3%A9mon/F196214124813"
+      macys: "https://www.macys.com/shop/product/pokemon-mega-evolution-s2-phantasmal-flames-elite-trainer-box?ID=24514058"
       pokene: "https://www.pokene.com/category/phantasmal-flames"
       forgeandfire: "https://forgeandfiregaming.com/phantasmal-flames/"
 
@@ -156,6 +159,7 @@ products:
       bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-phantasmal-flames-sleeved-booster-styles-may-vary/JJG2TLXCP2"
       gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-phantasmal-flames-sleeved-booster-pack/20027388.html"
       tcgplayer: "https://www.tcgplayer.com/product/654145/pokemon-me02-phantasmal-flames-phantasmal-flames-sleeved-booster-pack"
+      booksamillion: "https://www.booksamillion.com/p/Pok%C3%A9mon-Mega-Evolutions-Phantasmal-Flames/Pok%C3%A9mon/F196214126503"
       pokene: "https://www.pokene.com/category/phantasmal-flames"
       forgeandfire: "https://forgeandfiregaming.com/phantasmal-flames/"
 
@@ -166,13 +170,17 @@ products:
       target: "https://www.target.com/p/pok-233-mon-trading-card-game-mega-evolution-8212-phantasmal-flames-three-booster-blister-sneasel/-/A-94884511"
       walmart: "https://www.walmart.com/ip/POKEMON-ME2-PHANTASMAL-FLAMES-3PK-BLISTER/17818262325"
       bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-phantasmal-flames-3pk-booster-styles-may-vary/JJG2TL3XLQ"
+      amazon: "https://www.amazon.com/Pokemon-TCG-Evolutions-Phantasmal-Blister/dp/B0FPLGBRCT"
       gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-phantasmal-flames-three-booster-blister/20027389.html"
+      tcgplayer: "https://www.tcgplayer.com/product/654154/pokemon-me02-phantasmal-flames-phantasmal-flames-3-pack-blister-sneasel"
 
   # ── Build & Battle Box ────────────────────────────────────────────────
   - name: "Phantasmal Flames Build & Battle Box"
     msrp: 29.99
     urls:
+      walmart: "https://www.walmart.com/ip/Pokemon-Phantasmal-Flames/18358300517"
       amazon: "https://www.amazon.com/Pok%C3%A9mon-TCG-Evolution-Phantasmal-Flames-Battle/dp/B0FPNPRB99"
+      bestbuy: "https://www.bestbuy.com/product/pokemon-me2-phantasmal-build-battle-box/JJG2TL2V9H"
       gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-phantasmal-flames-build-and-battle-box/20027392.html"
       tcgplayer: "https://www.tcgplayer.com/product/662725/pokemon-me02-phantasmal-flames-phantasmal-flames-build-and-battle-box"
       pokene: "https://www.pokene.com/category/phantasmal-flames"
@@ -182,13 +190,15 @@ products:
   - name: "Phantasmal Flames Single Pack Blister"
     msrp: 6.49
     urls:
+      walmart: "https://www.walmart.com/ip/POKEMON-ME2-PHANTASMAL-FLAMES-BLISTER/17765616595"
+      amazon: "https://www.amazon.com/Pokemon-Evolution-Phantasmal-Checklane-Whimsicott/dp/B0G56RPVM7"
+      bestbuy: "https://www.bestbuy.com/product/pokemon-pokemon-me2-phantasmal-flames-checklane-blister--whimsicott/J3YSYHRJ42"
       tcgplayer: "https://www.tcgplayer.com/product/654150/pokemon-me02-phantasmal-flames-phantasmal-flames-single-pack-blister-whimsicott"
 
   # ── Premium Checklane Blister ─────────────────────────────────────────
   - name: "Phantasmal Flames Premium Checklane Blister"
     msrp: 7.99
     urls:
-      bestbuy: "https://www.bestbuy.com/product/pokemon-pokemon-me2-phantasmal-flames-checklane-blister--whimsicott/J3YSYHRJ42"
       tcgplayer: "https://www.tcgplayer.com/product/654147/pokemon-me02-phantasmal-flames-phantasmal-flames-premium-checklane-blister-blaziken"
 
 # Keyword monitoring - watch for new Pokemon TCG listings
