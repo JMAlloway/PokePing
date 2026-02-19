@@ -171,6 +171,26 @@ class MonitorEngine:
             )
             return
 
+        # MSRP-based third-party detection: if a product is "in stock" but
+        # the price is well above MSRP, it's almost certainly a third-party
+        # marketplace seller (Amazon/Walmart) rather than the retailer itself.
+        # Override to OUT_OF_STOCK so we correctly detect when the actual
+        # retailer lists it at MSRP (triggers an OOS → IN_STOCK transition).
+        if (
+            result.status == StockStatus.IN_STOCK
+            and msrp
+            and result.price
+            and result.price > msrp * 1.05
+        ):
+            logger.info(
+                "Price $%.2f exceeds MSRP $%.2f for %s @ %s — treating as third-party OOS",
+                result.price,
+                msrp,
+                product_name,
+                monitor.name,
+            )
+            new_status = StockStatus.OUT_OF_STOCK.value
+
         old_status = await self.db.get_last_status(monitor.name, product_url)
 
         # First check — record initial state, don't alert (avoids spam on startup)
