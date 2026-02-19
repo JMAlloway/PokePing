@@ -15,7 +15,9 @@ from .base import RetailerMonitor, ProductResult, StockStatus
 logger = logging.getLogger(__name__)
 
 # Target's Redsky API for product fulfillment/availability
-REDSKY_BASE = "https://redsky.target.com/redsky_aggregations/v1/web_platform/product_fulfillment_v1"
+# product_summary_with_fulfillment_v1 uses "tcins" (plural) and returns
+# data under "product_summaries" instead of "product".
+REDSKY_BASE = "https://redsky.target.com/redsky_aggregations/v1/web/product_summary_with_fulfillment_v1"
 
 # API key that Target's frontend uses (public, rotates occasionally)
 DEFAULT_API_KEY = "9f36aeafbe60771e321a7cc95a78140772ab3e96"
@@ -51,25 +53,27 @@ class TargetMonitor(RetailerMonitor):
 
         params = {
             "key": DEFAULT_API_KEY,
-            "tcin": tcin,
-            "store_id": "none",
-            "has_store_id": "false",
+            "tcins": tcin,  # product_summary endpoint uses "tcins" (plural)
             "zip": "10001",  # Default ZIP for online availability
             "state": "NY",
             "latitude": "40.75",
             "longitude": "-73.99",
-            "scheduled_delivery_store_id": "none",
-            "pricing_store_id": "none",
         }
 
         url = f"{REDSKY_BASE}?{urlencode(params)}"
         data = await self.fetch_json(url, headers={"Accept": "application/json"})
 
-        product_data = data.get("data", {}).get("product", {})
+        # product_summary_with_fulfillment_v1 nests under "product_summaries"
+        summaries = data.get("data", {}).get("product_summaries", [])
+        if not summaries:
+            # Fall back to older response shape
+            product_data = data.get("data", {}).get("product", {})
+        else:
+            product_data = summaries[0] if summaries else {}
 
-        # Extract fulfillment / availability
+        # Extract fulfillment / availability — handle both response shapes
         fulfillment = product_data.get("fulfillment", {})
-        shipping = fulfillment.get("shipping_options", {})
+        shipping = fulfillment.get("shipping_options", fulfillment)
         availability = shipping.get("availability_status", "UNAVAILABLE")
 
         if availability in ("IN_STOCK", "LIMITED_STOCK"):
@@ -79,13 +83,15 @@ class TargetMonitor(RetailerMonitor):
         else:
             status = StockStatus.OUT_OF_STOCK
 
-        # Extract price
+        # Extract price — handle both response shapes
         price_data = product_data.get("price", {})
-        price = price_data.get("formatted_current_price")
+        price = price_data.get("formatted_current_price") or price_data.get(
+            "current_retail", ""
+        )
         price_float = None
         if price:
             try:
-                price_float = float(price.replace("$", "").replace(",", ""))
+                price_float = float(str(price).replace("$", "").replace(",", ""))
             except ValueError:
                 pass
 
