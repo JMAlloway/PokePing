@@ -76,9 +76,13 @@ class TargetMonitor(RetailerMonitor):
         shipping = fulfillment.get("shipping_options", fulfillment)
         availability = shipping.get("availability_status", "UNAVAILABLE")
 
+        # Target returns "PRE_ORDER" for products in their system that aren't
+        # yet purchasable.  Only "PRE_ORDER_SELLABLE" means the Pre-Order
+        # button is actually live on the page.  Treat plain PRE_ORDER the same
+        # as out-of-stock so we don't send false pre-order alerts.
         if availability in ("IN_STOCK", "LIMITED_STOCK"):
             status = StockStatus.IN_STOCK
-        elif availability == "PRE_ORDER":
+        elif availability == "PRE_ORDER_SELLABLE":
             status = StockStatus.PRE_ORDER
         else:
             status = StockStatus.OUT_OF_STOCK
