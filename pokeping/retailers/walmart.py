@@ -18,6 +18,14 @@ logger = logging.getLogger(__name__)
 # Walmart's product API endpoint
 WALMART_API = "https://www.walmart.com/orchestra/home/graphql"
 
+# Seller names that indicate Walmart is the direct seller
+_WALMART_FIRST_PARTY = {"walmart.com", "walmart", "walmart inc", "walmart inc."}
+
+
+def _is_first_party_walmart(seller: str) -> bool:
+    """Check if the seller is Walmart itself (not a marketplace third-party)."""
+    return seller.lower().strip().rstrip(".") in _WALMART_FIRST_PARTY
+
 
 def extract_product_id(url: str) -> str | None:
     """Extract Walmart product ID from URL or raw ID.
@@ -55,6 +63,8 @@ class WalmartMonitor(RetailerMonitor):
                     priceInfo { currentPrice { price priceString } }
                     imageInfo { thumbnailUrl }
                     canonicalUrl
+                    sellerName
+                    sellerDisplayName
                 }
             }""",
             "variables": {"itemId": product_id},
@@ -103,6 +113,23 @@ class WalmartMonitor(RetailerMonitor):
         canonical = product_data.get("canonicalUrl", "")
         page_url = f"https://www.walmart.com{canonical}" if canonical else product_url
 
+        # Seller detection: only count as in-stock if sold by Walmart.com
+        extra: dict = {}
+        seller = (
+            product_data.get("sellerDisplayName")
+            or product_data.get("sellerName")
+            or ""
+        )
+        if seller:
+            extra["seller"] = seller
+            if status == StockStatus.IN_STOCK and not _is_first_party_walmart(seller):
+                logger.info(
+                    "Walmart product '%s' sold by third-party '%s' — treating as OOS",
+                    product_name,
+                    seller,
+                )
+                status = StockStatus.OUT_OF_STOCK
+
         return ProductResult(
             retailer=self.name,
             product_name=product_name,
@@ -110,6 +137,7 @@ class WalmartMonitor(RetailerMonitor):
             status=status,
             price=price_float,
             image_url=image,
+            extra=extra,
         )
 
     async def check_scrape(self, product_url: str, product_name: str) -> ProductResult:
@@ -121,6 +149,7 @@ class WalmartMonitor(RetailerMonitor):
         status = StockStatus.UNKNOWN
         price_float = None
         image_url = None
+        extra: dict = {}
         got_product_data = False
 
         # Try parsing __NEXT_DATA__ script tag
@@ -153,6 +182,23 @@ class WalmartMonitor(RetailerMonitor):
                 )
 
                 image_url = product.get("imageInfo", {}).get("thumbnailUrl")
+
+                # Seller detection from __NEXT_DATA__
+                seller = (
+                    product.get("sellerDisplayName")
+                    or product.get("sellerName")
+                    or product.get("sellerInfo", {}).get("sellerName")
+                    or ""
+                )
+                if seller:
+                    extra["seller"] = seller
+                    if status == StockStatus.IN_STOCK and not _is_first_party_walmart(seller):
+                        logger.info(
+                            "Walmart product '%s' sold by third-party '%s' — treating as OOS",
+                            product_name,
+                            seller,
+                        )
+                        status = StockStatus.OUT_OF_STOCK
             except (json.JSONDecodeError, KeyError, TypeError) as exc:
                 logger.debug("Failed to parse Walmart __NEXT_DATA__: %s", exc)
 
@@ -179,6 +225,7 @@ class WalmartMonitor(RetailerMonitor):
             status=status,
             price=price_float,
             image_url=image_url,
+            extra=extra,
         )
 
     def build_affiliate_url(self, url: str) -> str:

@@ -48,6 +48,69 @@ def extract_asin(url_or_asin: str) -> str | None:
     return None
 
 
+def _extract_seller(soup) -> str | None:
+    """Extract seller name from Amazon product page.
+
+    Checks multiple locations where Amazon displays the seller:
+      1. JSON-LD structured data (offers.seller.name)
+      2. #merchant-info div ("Ships from and sold by ...")
+      3. #sellerProfileTriggerId link (third-party seller name)
+      4. Tabular buybox "Sold by" row
+    Returns the seller name or None if not determinable.
+    """
+    # Method 1: JSON-LD seller
+    json_ld = soup.find("script", {"type": "application/ld+json"})
+    if json_ld and json_ld.string:
+        try:
+            data = json.loads(json_ld.string)
+            if isinstance(data, list):
+                data = data[0]
+            offers = data.get("offers", {})
+            if isinstance(offers, list):
+                offers = offers[0] if offers else {}
+            seller = offers.get("seller", {})
+            if isinstance(seller, dict):
+                name = seller.get("name", "")
+                if name:
+                    return name.strip()
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            pass
+
+    # Method 2: Merchant info div
+    merchant = soup.find("div", {"id": "merchant-info"})
+    if merchant:
+        text = merchant.get_text(strip=True)
+        # "Ships from and sold by Amazon.com."
+        match = re.search(r"[Ss]old by\s+(.+)", text)
+        if match:
+            return match.group(1).strip().rstrip(".")
+
+    # Method 3: Seller profile trigger link (present for third-party sellers)
+    seller_link = soup.find("a", {"id": "sellerProfileTriggerId"})
+    if seller_link:
+        return seller_link.get_text(strip=True)
+
+    # Method 4: Tabular buybox "Sold by" row
+    tabular = soup.find("div", {"id": "tabular-buybox"})
+    if not tabular:
+        tabular = soup.find("div", {"id": "tabular-buybox-container"})
+    if tabular:
+        spans = tabular.find_all("span", {"class": "tabular-buybox-text"})
+        for i, span in enumerate(spans):
+            if "sold by" in span.get_text().lower() and i + 1 < len(spans):
+                seller_text = spans[i + 1].get_text(strip=True)
+                if seller_text:
+                    return seller_text
+
+    return None
+
+
+def _is_first_party_amazon(seller: str) -> bool:
+    """Check if the seller is Amazon.com itself (not a third-party marketplace seller)."""
+    s = seller.lower().strip().rstrip(".")
+    return s in ("amazon.com", "amazon", "amazon.com services llc")
+
+
 def _detect_bot_block(soup) -> bool:
     """Detect if Amazon served a CAPTCHA or anti-bot challenge page."""
     # CAPTCHA form
@@ -199,6 +262,19 @@ class AmazonMonitor(RetailerMonitor):
             if img:
                 image_url = img.get("src") or img.get("data-old-hires")
 
+        # Seller detection: only count as in-stock if sold by Amazon.com
+        extra: dict = {}
+        seller = _extract_seller(soup)
+        if seller:
+            extra["seller"] = seller
+            if status == StockStatus.IN_STOCK and not _is_first_party_amazon(seller):
+                logger.info(
+                    "Amazon product '%s' sold by third-party '%s' — treating as OOS",
+                    product_name,
+                    seller,
+                )
+                status = StockStatus.OUT_OF_STOCK
+
         return ProductResult(
             retailer=self.name,
             product_name=product_name,
@@ -206,6 +282,7 @@ class AmazonMonitor(RetailerMonitor):
             status=status,
             price=price_float,
             image_url=image_url,
+            extra=extra,
         )
 
     def build_affiliate_url(self, url: str) -> str:
