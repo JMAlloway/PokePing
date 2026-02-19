@@ -43,7 +43,13 @@ class MacysMonitor(RetailerMonitor):
         raise NotImplementedError
 
     async def check_scrape(self, product_url: str, product_name: str) -> ProductResult:
-        soup = await self.fetch_html(product_url)
+        soup = await self.fetch_html(
+            product_url,
+            headers={
+                "Referer": "https://www.macys.com/",
+                "Origin": "https://www.macys.com",
+            },
+        )
 
         status = StockStatus.UNKNOWN
         price_float = None

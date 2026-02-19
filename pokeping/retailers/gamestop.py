@@ -38,7 +38,13 @@ class GameStopMonitor(RetailerMonitor):
 
     async def check_scrape(self, product_url: str, product_name: str) -> ProductResult:
         """Scrape GameStop product page for availability."""
-        soup = await self.fetch_html(product_url)
+        soup = await self.fetch_html(
+            product_url,
+            headers={
+                "Referer": "https://www.gamestop.com/",
+                "Origin": "https://www.gamestop.com",
+            },
+        )
 
         status = StockStatus.UNKNOWN
         price_float = None

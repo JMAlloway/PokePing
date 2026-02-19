@@ -51,13 +51,24 @@ class RetailerMonitor(abc.ABC):
     def __init__(self, session: aiohttp.ClientSession, config: dict):
         self.session = session
         self.config = config
-        self._headers = {
-            "User-Agent": config.get(
-                "user_agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        self._ua = config.get(
+            "user_agent",
+            (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
             ),
+        )
+        self._headers = {
+            "User-Agent": self._ua,
             "Accept": "application/json, text/html, */*",
             "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Sec-CH-UA": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+            "Sec-CH-UA-Mobile": "?0",
+            "Sec-CH-UA-Platform": '"Windows"',
+            "Upgrade-Insecure-Requests": "1",
         }
 
     async def check(self, product_url: str, product_name: str) -> ProductResult:
@@ -112,6 +123,10 @@ class RetailerMonitor(abc.ABC):
     async def fetch_json(self, url: str, **kwargs) -> dict:
         """Helper: fetch a URL and parse as JSON."""
         headers = {**self._headers, **kwargs.pop("headers", {})}
+        headers.setdefault("Accept", "application/json, text/plain, */*")
+        headers.setdefault("Sec-Fetch-Dest", "empty")
+        headers.setdefault("Sec-Fetch-Mode", "cors")
+        headers.setdefault("Sec-Fetch-Site", "same-origin")
         timeout = aiohttp.ClientTimeout(
             total=self.config.get("request_timeout", 15)
         )
@@ -124,6 +139,10 @@ class RetailerMonitor(abc.ABC):
     async def post_json(self, url: str, json_body: dict, **kwargs) -> dict:
         """Helper: POST JSON to a URL and parse the response as JSON."""
         headers = {**self._headers, **kwargs.pop("headers", {})}
+        headers.setdefault("Accept", "application/json, text/plain, */*")
+        headers.setdefault("Sec-Fetch-Dest", "empty")
+        headers.setdefault("Sec-Fetch-Mode", "cors")
+        headers.setdefault("Sec-Fetch-Site", "same-origin")
         timeout = aiohttp.ClientTimeout(
             total=self.config.get("request_timeout", 15)
         )
@@ -136,7 +155,11 @@ class RetailerMonitor(abc.ABC):
     async def fetch_html(self, url: str, **kwargs) -> BeautifulSoup:
         """Helper: fetch a URL and parse as HTML."""
         headers = {**self._headers, **kwargs.pop("headers", {})}
-        headers["Accept"] = "text/html,application/xhtml+xml"
+        headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+        headers["Sec-Fetch-Dest"] = "document"
+        headers["Sec-Fetch-Mode"] = "navigate"
+        headers["Sec-Fetch-Site"] = "none"
+        headers["Sec-Fetch-User"] = "?1"
         timeout = aiohttp.ClientTimeout(
             total=self.config.get("request_timeout", 15)
         )

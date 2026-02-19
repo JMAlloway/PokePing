@@ -34,41 +34,11 @@ class TCGPlayerMonitor(RetailerMonitor):
     base_url = "https://www.tcgplayer.com"
 
     async def check_api(self, product_url: str, product_name: str) -> ProductResult:
-        """TCGplayer has an API but it requires partner credentials.
-
-        For the free tier, we fall back to scraping.
-        """
-        product_id = extract_product_id(product_url)
-        if not product_id:
-            raise NotImplementedError
-
-        # TCGplayer's public product endpoint
-        api_url = f"https://mp-search-api.tcgplayer.com/v1/product/{product_id}/details"
-        data = await self.fetch_json(api_url)
-
-        product = data.get("results", [{}])[0] if data.get("results") else {}
-        if not product:
-            raise ValueError("No product data returned")
-
-        listings = product.get("totalListings", 0)
-        price = product.get("marketPrice") or product.get("lowestPrice")
-
-        if listings > 0:
-            status = StockStatus.IN_STOCK
-        else:
-            status = StockStatus.OUT_OF_STOCK
-
-        return ProductResult(
-            retailer=self.name,
-            product_name=product_name,
-            url=product_url,
-            status=status,
-            price=float(price) if price else None,
-            image_url=product.get("imageUrl"),
-        )
+        """TCGplayer API requires partner credentials — use scraper."""
+        raise NotImplementedError
 
     async def check_scrape(self, product_url: str, product_name: str) -> ProductResult:
-        """Fallback: scrape TCGplayer product page."""
+        """Scrape TCGplayer product page."""
         soup = await self.fetch_html(product_url)
 
         status = StockStatus.UNKNOWN
@@ -76,12 +46,15 @@ class TCGPlayerMonitor(RetailerMonitor):
         image_url = None
 
         # Check JSON-LD
-        json_ld = soup.find("script", {"type": "application/ld+json"})
-        if json_ld:
+        for json_ld in soup.find_all("script", {"type": "application/ld+json"}):
             try:
                 data = json.loads(json_ld.string)
                 if isinstance(data, list):
                     data = data[0]
+
+                # Only process Product-type structured data
+                if data.get("@type") not in ("Product", "IndividualProduct", None):
+                    continue
 
                 offers = data.get("offers", {})
                 if isinstance(offers, list) and offers:
@@ -101,31 +74,38 @@ class TCGPlayerMonitor(RetailerMonitor):
                 if isinstance(image_url, list):
                     image_url = image_url[0] if image_url else None
 
+                if status != StockStatus.UNKNOWN:
+                    break
+
             except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
                 logger.debug("Failed to parse TCGplayer JSON-LD: %s", exc)
 
-        # Fallback: check for listings
+        # Fallback: check for listings or "Add to Cart"
         if status == StockStatus.UNKNOWN:
             listings = soup.find("section", {"class": re.compile(r"listing", re.I)})
             if listings:
                 status = StockStatus.IN_STOCK
-            else:
-                no_results = soup.find(
-                    string=re.compile(r"no (results|listings)", re.I)
-                )
-                if no_results:
-                    status = StockStatus.OUT_OF_STOCK
 
-        # Price from market price element
+            add_btn = soup.find("button", string=re.compile(r"add to cart", re.I))
+            if add_btn:
+                status = StockStatus.IN_STOCK
+
+            no_results = soup.find(
+                string=re.compile(r"no (results|listings)|currently unavailable", re.I)
+            )
+            if no_results:
+                status = StockStatus.OUT_OF_STOCK
+
+        # Check for market price anywhere on page
         if price_float is None:
-            price_el = soup.find("span", {"class": re.compile(r"market-?price", re.I)})
-            if price_el:
-                try:
-                    price_float = float(
-                        price_el.get_text().replace("$", "").replace(",", "").strip()
-                    )
-                except ValueError:
-                    pass
+            for el in soup.find_all(string=re.compile(r"\$\d+\.\d{2}")):
+                match = re.search(r"\$([\d,]+\.\d{2})", el)
+                if match:
+                    try:
+                        price_float = float(match.group(1).replace(",", ""))
+                        break
+                    except ValueError:
+                        pass
 
         return ProductResult(
             retailer=self.name,

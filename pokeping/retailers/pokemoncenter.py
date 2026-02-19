@@ -34,47 +34,11 @@ class PokemonCenterMonitor(RetailerMonitor):
     base_url = "https://www.pokemoncenter.com"
 
     async def check_api(self, product_url: str, product_name: str) -> ProductResult:
-        """Try Pokemon Center's product API.
+        """Pokemon Center is behind Cloudflare — API is not accessible.
 
-        Pokemon Center occasionally exposes product data via an API endpoint.
-        This tends to change, so the scraper fallback is important.
+        Use the scraper instead, which may work with proper browser headers.
         """
-        slug = extract_slug(product_url)
-        if not slug:
-            raise NotImplementedError("Cannot determine API endpoint without slug")
-
-        # Pokemon Center has used various API patterns
-        api_url = f"https://www.pokemoncenter.com/api/product/{slug}"
-
-        data = await self.fetch_json(
-            api_url,
-            headers={
-                "Accept": "application/json",
-                "X-Requested-With": "XMLHttpRequest",
-            },
-        )
-
-        avail = data.get("availability", data.get("status", ""))
-        price = data.get("price", {}).get("value")
-        image = data.get("image", data.get("thumbnail"))
-
-        if avail in ("IN_STOCK", "Available", "inStock"):
-            status = StockStatus.IN_STOCK
-        elif avail in ("PRE_ORDER", "PreOrder"):
-            status = StockStatus.PRE_ORDER
-        elif avail in ("OUT_OF_STOCK", "Unavailable", "outOfStock"):
-            status = StockStatus.OUT_OF_STOCK
-        else:
-            status = StockStatus.UNKNOWN
-
-        return ProductResult(
-            retailer=self.name,
-            product_name=product_name,
-            url=product_url,
-            status=status,
-            price=float(price) if price else None,
-            image_url=image,
-        )
+        raise NotImplementedError
 
     async def check_scrape(self, product_url: str, product_name: str) -> ProductResult:
         """Fallback: scrape Pokemon Center product page.

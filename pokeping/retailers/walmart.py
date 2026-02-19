@@ -64,6 +64,11 @@ class WalmartMonitor(RetailerMonitor):
             "Content-Type": "application/json",
             "Accept": "application/json",
             "X-O-PLATFORM": "rweb",
+            "X-O-SEGMENT": "oaoh",
+            "X-O-CCMID": "",
+            "X-O-GQL-QUERY": "query ProductPage",
+            "Referer": f"https://www.walmart.com/ip/{product_id}",
+            "Origin": "https://www.walmart.com",
         }
 
         data = await self.post_json(

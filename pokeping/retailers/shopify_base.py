@@ -24,6 +24,9 @@ def extract_shopify_handle(url: str, base_url: str = "") -> str | None:
       - https://store.com/products/product-handle
       - https://store.com/collections/all/products/product-handle
       - product-handle (bare handle)
+
+    Returns None for category/collection pages that don't reference
+    a specific product.
     """
     match = re.search(r"/products/([a-zA-Z0-9_-]+)", url)
     if match:
@@ -44,11 +47,29 @@ class ShopifyMonitor(RetailerMonitor):
     name = "shopify"
     base_url = ""
 
+    def _extract_collection_handle(self, url: str) -> str | None:
+        """Extract collection handle from a category/collection URL.
+
+        Handles:
+          - https://store.com/collections/some-collection
+          - https://store.com/some-page/  (try as collection)
+        """
+        match = re.search(r"/collections/([a-zA-Z0-9_-]+)", url)
+        if match:
+            return match.group(1)
+        # URL like /phantasmal-flames/ — last path segment
+        if self.base_url and url.startswith(self.base_url):
+            path = url[len(self.base_url):].strip("/")
+            if path and "/" not in path:
+                return path
+        return None
+
     async def check_api(self, product_url: str, product_name: str) -> ProductResult:
         """Use Shopify's product JSON API."""
         handle = extract_shopify_handle(product_url, self.base_url)
         if not handle:
-            raise NotImplementedError("Cannot extract product handle from URL")
+            # Try as a collection/category page instead
+            return await self._check_collection_api(product_url, product_name)
 
         api_url = f"{self.base_url}/products/{handle}.json"
         data = await self.fetch_json(api_url)
@@ -94,6 +115,61 @@ class ShopifyMonitor(RetailerMonitor):
             url=product_url,
             status=status,
             price=price_float,
+            image_url=image_url,
+        )
+
+    async def _check_collection_api(self, product_url: str, product_name: str) -> ProductResult:
+        """Check a Shopify collection page for any available products."""
+        collection_handle = self._extract_collection_handle(product_url)
+        if not collection_handle:
+            raise NotImplementedError("Cannot extract product or collection handle from URL")
+
+        api_url = f"{self.base_url}/collections/{collection_handle}/products.json"
+        try:
+            data = await self.fetch_json(api_url)
+        except Exception:
+            raise NotImplementedError("Collection API not available")
+
+        products = data.get("products", [])
+        if not products:
+            return ProductResult(
+                retailer=self.name,
+                product_name=product_name,
+                url=product_url,
+                status=StockStatus.OUT_OF_STOCK,
+            )
+
+        # Check if any product in the collection has available variants
+        any_available = False
+        best_price = None
+        image_url = None
+        for product in products:
+            variants = product.get("variants", [])
+            for v in variants:
+                if v.get("available", False):
+                    any_available = True
+                    price_str = v.get("price")
+                    if price_str:
+                        try:
+                            p = float(price_str)
+                            if best_price is None or p < best_price:
+                                best_price = p
+                        except (ValueError, TypeError):
+                            pass
+                    break
+            if not image_url:
+                images = product.get("images", [])
+                if images:
+                    image_url = images[0].get("src")
+
+        status = StockStatus.IN_STOCK if any_available else StockStatus.OUT_OF_STOCK
+
+        return ProductResult(
+            retailer=self.name,
+            product_name=product_name,
+            url=product_url,
+            status=status,
+            price=best_price,
             image_url=image_url,
         )
 
