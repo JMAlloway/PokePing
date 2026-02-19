@@ -55,19 +55,27 @@ retailers:
 # Products to monitor
 # Each product needs at minimum a name and at least one retailer URL/ID
 # Optional: set "msrp" to filter out above-MSRP scalper prices
-products: []
-# Example:
+products:
+  - name: "Phantasmal Flames Booster Bundle (6 Packs)"
+    msrp: 29.99
+    urls:
+      target: "https://www.target.com/p/pok-233-mon-trading-card-game-mega-evolution-8212-phantasmal-flames-booster-bundle/-/A-94884496"
+      walmart: "https://www.walmart.com/ip/POKEMON-ME2-PHANTASMAL-FLAMES-BOOSTER-BUNDLE/17785924366"
+      amazon: "https://www.amazon.com/Pok%C3%A9mon-TCG-Evolution-Phantasmal-Flames-Booster/dp/B0FTF6TC43"
+      bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-phantasmal-flames-6pk-booster-bundle/JJG2TL3XY4"
+      pokemoncenter: "https://www.pokemoncenter.com/product/10-10191-109/pokemon-tcg-mega-evolution-phantasmal-flames-booster-bundle-6-packs"
+      gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-phantasmal-flames-booster-bundle/20027390.html"
+      tcgplayer: "https://www.tcgplayer.com/product/654160/pokemon-me02-phantasmal-flames-phantasmal-flames-booster-bundle"
+      barnesnoble: "https://www.barnesandnoble.com/w/pokemon-mega-evolution-s1-booster-bundle-box-pokemon/1148312555"
+      # costco: Not listed yet — check back when Costco lists Pokemon ME2 bundles
+      # samsclub: Not listed yet — check back when Sam's Club lists Pokemon ME2 bundles
+
+# Example of adding more products:
 # - name: "Pokemon TCG Prismatic Evolutions Elite Trainer Box"
-#   msrp: 49.99   # Only alert when price is at or below MSRP
+#   msrp: 49.99
 #   urls:
 #     target: "https://www.target.com/p/-/A-12345678"
 #     walmart: "https://www.walmart.com/ip/12345678"
-#     amazon: "B0DEXAMPLE"
-#     bestbuy: "6590001"
-#     pokemoncenter: "https://www.pokemoncenter.com/product/12345"
-#     costco: "https://www.costco.com/product-name.product.4000271399.html"
-#     samsclub: "https://www.samsclub.com/p/product-name/prod12345678"
-#     barnesnoble: "https://www.barnesandnoble.com/w/product-name/1234567890"
 
 # Keyword monitoring - watch for new Pokemon TCG listings
 keywords:
