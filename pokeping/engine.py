@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
 class MonitorEngine:
     """Main engine that polls retailers and dispatches alerts."""
 
+    # Number of consecutive checks with the same new status required
+    # before we treat a status change as real and send an alert.
+    CONFIRM_CHECKS = 2
+
     def __init__(self, config: dict):
         self.config = config
         self.db = StateDB(config.get("db_path", "pokeping.db"))
@@ -26,6 +30,8 @@ class MonitorEngine:
         self._alerter: DiscordAlerter | None = None
         self._monitors: dict[str, RetailerMonitor] = {}
         self._running = False
+        # Track pending status changes: (retailer, product_url) -> (new_status, consecutive_count)
+        self._pending_changes: dict[tuple[str, str], tuple[str, int]] = {}
 
     async def start(self):
         """Initialize connections and start the monitoring loop."""
@@ -116,7 +122,12 @@ class MonitorEngine:
         product_name: str,
         msrp: float | None = None,
     ):
-        """Check a single product and send alert if status changed."""
+        """Check a single product and send alert if status changed.
+
+        Uses debouncing: a status change must be confirmed by CONFIRM_CHECKS
+        consecutive checks before an alert is sent.  UNKNOWN results are
+        ignored entirely — they don't update the DB or count toward anything.
+        """
         try:
             result = await monitor.check(product_url, product_name)
         except Exception as exc:
@@ -125,17 +136,26 @@ class MonitorEngine:
             )
             return
 
-        old_status = await self.db.get_last_status(monitor.name, product_url)
         new_status = result.status.value
 
-        # Update DB regardless
-        await self.db.update_status(
-            monitor.name, product_url, product_name, new_status, result.price
-        )
+        # Ignore UNKNOWN results — the scraper/API couldn't get real data
+        # (e.g. bot block, timeout, empty response). Don't let transient
+        # failures update our state or trigger false alerts.
+        if result.status == StockStatus.UNKNOWN:
+            logger.debug(
+                "Ignoring UNKNOWN result for %s @ %s (possible transient failure)",
+                product_name,
+                monitor.name,
+            )
+            return
 
-        # Only alert on meaningful transitions
+        old_status = await self.db.get_last_status(monitor.name, product_url)
+
+        # First check — record initial state, don't alert (avoids spam on startup)
         if old_status is None:
-            # First check — log but don't alert (avoids spam on startup)
+            await self.db.update_status(
+                monitor.name, product_url, product_name, new_status, result.price
+            )
             logger.info(
                 "Initial status for %s @ %s: %s",
                 product_name,
@@ -144,8 +164,47 @@ class MonitorEngine:
             )
             return
 
+        # Status unchanged — clear any pending change counter and update DB
         if old_status == new_status:
+            key = (monitor.name, product_url)
+            if key in self._pending_changes:
+                del self._pending_changes[key]
+            await self.db.update_status(
+                monitor.name, product_url, product_name, new_status, result.price
+            )
             return
+
+        # --- Status differs from last confirmed status --- #
+        # Debounce: require CONFIRM_CHECKS consecutive checks showing the
+        # same new status before we treat it as a real change.
+        key = (monitor.name, product_url)
+        pending_status, count = self._pending_changes.get(key, (None, 0))
+
+        if pending_status == new_status:
+            count += 1
+        else:
+            # Different new status than what was pending — reset counter
+            count = 1
+
+        self._pending_changes[key] = (new_status, count)
+
+        if count < self.CONFIRM_CHECKS:
+            logger.debug(
+                "Pending status change for %s @ %s: %s → %s (%d/%d confirms)",
+                product_name,
+                monitor.name,
+                old_status,
+                new_status,
+                count,
+                self.CONFIRM_CHECKS,
+            )
+            return
+
+        # Change confirmed — clear pending tracker and update DB
+        del self._pending_changes[key]
+        await self.db.update_status(
+            monitor.name, product_url, product_name, new_status, result.price
+        )
 
         # Alert-worthy transitions
         should_alert = False
@@ -174,7 +233,7 @@ class MonitorEngine:
 
         if should_alert:
             logger.info(
-                "Status change: %s @ %s: %s → %s",
+                "Status change: %s @ %s: %s → %s (confirmed)",
                 product_name,
                 monitor.name,
                 old_status,

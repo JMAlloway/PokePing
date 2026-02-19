@@ -71,14 +71,25 @@ class WalmartMonitor(RetailerMonitor):
         )
 
         product_data = data.get("data", {}).get("product", {})
-        avail = product_data.get("availabilityStatus", "NOT_AVAILABLE")
+        if not product_data:
+            logger.warning("Walmart API returned no product data for %s", product_name)
+            return ProductResult(
+                retailer=self.name,
+                product_name=product_name,
+                url=product_url,
+                status=StockStatus.UNKNOWN,
+            )
+
+        avail = product_data.get("availabilityStatus", "")
 
         if avail == "IN_STOCK":
             status = StockStatus.IN_STOCK
         elif avail == "PRE_ORDER":
             status = StockStatus.PRE_ORDER
-        else:
+        elif avail:
             status = StockStatus.OUT_OF_STOCK
+        else:
+            status = StockStatus.UNKNOWN
 
         price_info = product_data.get("priceInfo", {}).get("currentPrice", {})
         price_float = price_info.get("price")
@@ -102,9 +113,10 @@ class WalmartMonitor(RetailerMonitor):
         url = f"https://www.walmart.com/ip/{product_id}" if product_id else product_url
 
         soup = await self.fetch_html(url)
-        status = StockStatus.OUT_OF_STOCK
+        status = StockStatus.UNKNOWN
         price_float = None
         image_url = None
+        got_product_data = False
 
         # Try parsing __NEXT_DATA__ script tag
         next_data = soup.find("script", {"id": "__NEXT_DATA__"})
@@ -120,10 +132,14 @@ class WalmartMonitor(RetailerMonitor):
                 )
 
                 avail = product.get("availabilityStatus", "")
-                if avail == "IN_STOCK":
-                    status = StockStatus.IN_STOCK
-                elif avail == "PRE_ORDER":
-                    status = StockStatus.PRE_ORDER
+                if avail:
+                    got_product_data = True
+                    if avail == "IN_STOCK":
+                        status = StockStatus.IN_STOCK
+                    elif avail == "PRE_ORDER":
+                        status = StockStatus.PRE_ORDER
+                    else:
+                        status = StockStatus.OUT_OF_STOCK
 
                 price_float = (
                     product.get("priceInfo", {})
@@ -135,8 +151,8 @@ class WalmartMonitor(RetailerMonitor):
             except (json.JSONDecodeError, KeyError, TypeError) as exc:
                 logger.debug("Failed to parse Walmart __NEXT_DATA__: %s", exc)
 
-        # Fallback: look for add-to-cart and out-of-stock indicators
-        if status == StockStatus.OUT_OF_STOCK:
+        # Fallback: look for add-to-cart and out-of-stock indicators in the HTML
+        if not got_product_data:
             add_btn = soup.find("button", string=re.compile(r"add to cart", re.I))
             if add_btn:
                 status = StockStatus.IN_STOCK
@@ -144,6 +160,12 @@ class WalmartMonitor(RetailerMonitor):
             oos = soup.find(string=re.compile(r"out of stock", re.I))
             if oos:
                 status = StockStatus.OUT_OF_STOCK
+
+            if status == StockStatus.UNKNOWN:
+                logger.warning(
+                    "Walmart scrape for %s returned no usable data (possible bot block)",
+                    product_name,
+                )
 
         return ProductResult(
             retailer=self.name,
