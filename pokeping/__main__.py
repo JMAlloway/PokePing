@@ -107,8 +107,9 @@ async def run(config: dict):
         print("\nShutting down PokePing...")
         asyncio.ensure_future(engine.stop())
 
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, shutdown_handler)
+    if sys.platform != "win32":
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, shutdown_handler)
 
     try:
         await engine.start()
