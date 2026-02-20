@@ -61,11 +61,28 @@ class DiscordAlerter:
         affiliate_url: Optional[str] = None,
         atc_url: Optional[str] = None,
         msrp: Optional[float] = None,
+        webhook_url: Optional[str] = None,
+        thread_id: Optional[str] = None,
     ):
-        """Send a stock alert embed to Discord."""
-        if not self.webhook_url:
+        """Send a stock alert embed to Discord.
+
+        Parameters
+        ----------
+        webhook_url : str, optional
+            Override the default webhook URL (e.g. for per-product routing).
+        thread_id : str, optional
+            Discord thread ID — appends ``?thread_id=`` to the webhook URL
+            so the message is posted inside a specific forum/thread.
+        """
+        url_to_use = webhook_url or self.webhook_url
+        if not url_to_use:
             logger.warning("No Discord webhook URL configured — skipping alert")
             return
+
+        # Append thread_id to webhook URL if targeting a Discord thread
+        if thread_id:
+            sep = "&" if "?" in url_to_use else "?"
+            url_to_use = f"{url_to_use}{sep}thread_id={thread_id}"
 
         # Respect rate limits
         if time.time() < self._rate_limit_reset:
@@ -142,7 +159,7 @@ class DiscordAlerter:
 
         try:
             async with self.session.post(
-                self.webhook_url, json=payload
+                url_to_use, json=payload
             ) as resp:
                 if resp.status == 429:
                     data = await resp.json()

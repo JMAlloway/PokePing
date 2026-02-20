@@ -210,6 +210,132 @@ products:
     urls:
       tcgplayer: "https://www.tcgplayer.com/product/654147/pokemon-me02-phantasmal-flames-phantasmal-flames-premium-checklane-blister-blaziken"
 
+  # ════════════════════════════════════════════════════════════════════
+  #  ASCENDED HEROES  (ME2.5)
+  #  Alerts for this product line go to a separate Discord thread.
+  #  Set discord_thread_id below OR use a different discord_webhook_url.
+  # ════════════════════════════════════════════════════════════════════
+
+  # ── Ascended Heroes: 2-Pack Collection (Erika) ──────────────────────
+  - name: "Ascended Heroes 2-Pack Collection (Erika)"
+    msrp: 9.99
+    discord_webhook_url: ""   # ← paste Ascended Heroes webhook here (or use thread_id)
+    discord_thread_id: ""     # ← paste Discord thread ID here
+    urls:
+      amazon: "https://www.amazon.com/dp/B0G547KBNB"
+      bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-2-pack-blister-styles-may-vary/JJG2TLXP48"
+      walmart: "https://www.walmart.com/ip/POKEMON-ME2-5-ASCENDED-HEROES-2PK-BLISTER/18911118976"
+      gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-ascended-heroes-2-pack-blister-styles-may-vary/20030565.html"
+      tcgplayer: "https://www.tcgplayer.com/product/666906/pokemon-me-ascended-heroes-mega-evolution-ascended-heroes-collection-erika"
+      pokemoncenter: "https://www.pokemoncenter.com/product/10-10312-122/pokemon-tcg-mega-evolution-ascended-heroes-collection-erika"
+
+  # ── Ascended Heroes: 2-Pack Collection (Larry) ──────────────────────
+  - name: "Ascended Heroes 2-Pack Collection (Larry)"
+    msrp: 9.99
+    discord_webhook_url: ""
+    discord_thread_id: ""
+    urls:
+      tcgplayer: "https://www.tcgplayer.com/product/666907/pokemon-me-ascended-heroes-mega-evolution-ascended-heroes-collection-larry"
+      pokemoncenter: "https://www.pokemoncenter.com/product/10-10312-123/pokemon-tcg-mega-evolution-ascended-heroes-collection-larry"
+
+  # ── Ascended Heroes: Tech Sticker Collection (Charmander) ───────────
+  - name: "Ascended Heroes Tech Sticker Collection (Charmander)"
+    msrp: 15.99
+    discord_webhook_url: ""
+    discord_thread_id: ""
+    urls:
+      amazon: "https://www.amazon.com/dp/B0G3CPRRCT"
+      bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-tech-sticker-collection-styles-may-vary/JJG2TL3JJ2"
+      walmart: "https://www.walmart.com/ip/POKEMON-ME2-5-ASCENDED-HEROES-TECH-STICKER-3PK-BLISTER/18970611755"
+      target: "https://www.target.com/p/pok-233-mon-mega-evolution-s2-5-ascended-heroes-tech-sticker-charmander/-/A-1007935778"
+      gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-ascended-heroes-tech-sticker-collection-styles-may-vary/437098.html"
+      tcgplayer: "https://www.tcgplayer.com/product/666908/pokemon-me-ascended-heroes-mega-evolution-ascended-heroes-tech-sticker-collection-charmander"
+
+  # ── Ascended Heroes: Tech Sticker Collection (Gastly) ───────────────
+  - name: "Ascended Heroes Tech Sticker Collection (Gastly)"
+    msrp: 15.99
+    discord_webhook_url: ""
+    discord_thread_id: ""
+    urls:
+      bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-tech-sticker-collection-gastly/JJG2TL3JJT"
+      target: "https://www.target.com/p/pok-233-mon-mega-evolution-s2-5-ascended-heroes-tech-sticker-gastly/-/A-95120822"
+      tcgplayer: "https://www.tcgplayer.com/product/666909/pokemon-me-ascended-heroes-mega-evolution-ascended-heroes-tech-sticker-collection-gastly"
+
+  # ── Ascended Heroes: Elite Trainer Box ──────────────────────────────
+  - name: "Ascended Heroes Elite Trainer Box"
+    msrp: 49.99
+    discord_webhook_url: ""
+    discord_thread_id: ""
+    urls:
+      amazon: "https://www.amazon.com/dp/B0G3CY83L5"
+      bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-elite-trainer-box/JJG2TLXSFV"
+      walmart: "https://www.walmart.com/ip/Pok-mon-Trading-Card-Game-Mega-Evolution-Ascended-Heroes-Elite-Trainer-Box/18710966734"
+      target: "https://www.target.com/p/2025-pok-me-2-5-elite-trainer-box/-/A-95082118"
+      gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-ascended-heroes-elite-trainer-box/20030564.html"
+      tcgplayer: "https://www.tcgplayer.com/product/668496/pokemon-me-ascended-heroes-ascended-heroes-elite-trainer-box"
+
+  # ── Ascended Heroes: Pokemon Center ETB (Exclusive) ─────────────────
+  - name: "Ascended Heroes Pokemon Center ETB"
+    msrp: 59.99
+    discord_webhook_url: ""
+    discord_thread_id: ""
+    urls:
+      pokemoncenter: "https://www.pokemoncenter.com/product/10-10315-108/pokemon-tcg-mega-evolution-ascended-heroes-pokemon-center-elite-trainer-box"
+      tcgplayer: "https://www.tcgplayer.com/product/668497/pokemon-me-ascended-heroes-ascended-heroes-pokemon-center-elite-trainer-box-exclusive"
+
+  # ── Ascended Heroes: Mini Tin (Styles May Vary) ─────────────────────
+  - name: "Ascended Heroes Mini Tin"
+    msrp: 9.99
+    discord_webhook_url: ""
+    discord_thread_id: ""
+    urls:
+      amazon: "https://www.amazon.com/dp/B0FHQCKHHP"
+      bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-mini-tin-styles-may-vary/JJG2TL3JCQ"
+      walmart: "https://www.walmart.com/ip/Pokemon-TCG-Mega-Evolution-Ascended-Heroes-Mini-Tin-Random-Art-2-Packs/18933850466"
+      gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-ascended-heroes-mini-tin/20030566.html"
+      tcgplayer: "https://www.tcgplayer.com/product/668535/pokemon-me-ascended-heroes-ascended-heroes-mini-tin-clefairy-and-chikorita"
+
+  # ── Ascended Heroes: Booster Bundle (6 Packs) ──────────────────────
+  - name: "Ascended Heroes Booster Bundle (6 Packs)"
+    msrp: 26.94
+    discord_webhook_url: ""
+    discord_thread_id: ""
+    urls:
+      bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-booster-bundle/JJG2TL3JP8"
+      walmart: "https://www.walmart.com/ip/Pok-mon-TCG-Mega-Evolution-Ascended-Heroes-Booster-Bundle-6-Packs/18728422476"
+      gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-ascended-heroes-booster-bundle/20030569.html"
+      tcgplayer: "https://www.tcgplayer.com/product/668541/pokemon-me-ascended-heroes-ascended-heroes-booster-bundle"
+      pokemoncenter: "https://www.pokemoncenter.com/product/10-10311-114/pokemon-tcg-mega-evolution-ascended-heroes-booster-bundle-6-packs"
+
+  # ── Ascended Heroes: Premium Poster Collection (Styles May Vary) ────
+  - name: "Ascended Heroes Premium Poster Collection"
+    msrp: 49.99
+    discord_webhook_url: ""
+    discord_thread_id: ""
+    urls:
+      amazon: "https://www.amazon.com/dp/B0G4XJPN8Q"
+      bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-premium-poster-collection-styles-may-vary/JJG2TL3JG6"
+      walmart: "https://www.walmart.com/ip/Pok-mon-Trading-Card-Game-Mega-Evolution-Ascended-Heroes-Premium-Poster-Collection-Styles-May-Vary/19009204107"
+      gamestop: "https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-ascended-heroes-premium-poster-collection/20030568.html"
+      tcgplayer: "https://www.tcgplayer.com/product/668536/pokemon-me-ascended-heroes-premium-poster-collection-mega-lucario"
+
+  # ── Ascended Heroes: First Partners Deluxe Pin Collection ───────────
+  - name: "Ascended Heroes First Partners Deluxe Pin Collection"
+    msrp: 24.99
+    discord_webhook_url: ""
+    discord_thread_id: ""
+    urls:
+      bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-first-partners-deluxe-pin-collection/JJG2TL3J84"
+      walmart: "https://www.walmart.com/ip/POKEMON-ME2-5-ASCENDED-HEROES-DELUXE-PIN-COLLECTION/19012610850"
+
+  # ── Ascended Heroes: Mega ex Box (Styles May Vary) ──────────────────
+  - name: "Ascended Heroes Mega ex Box"
+    msrp: 21.99
+    discord_webhook_url: ""
+    discord_thread_id: ""
+    urls:
+      bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-ex-box-styles-may-vary/JJG2TL3JLK"
+
 # Keyword monitoring - watch for new Pokemon TCG listings
 keywords:
   - "pokemon tcg"

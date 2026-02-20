@@ -115,11 +115,18 @@ class MonitorEngine:
 
                 msrp = product.get("msrp")
 
+                product_webhook = product.get("discord_webhook_url")
+                product_thread = product.get("discord_thread_id")
+
                 for retailer, url in urls.items():
                     monitor = self._monitors.get(retailer)
                     if monitor:
                         tasks.append(
-                            self._check_product(monitor, url, name, msrp=msrp)
+                            self._check_product(
+                                monitor, url, name, msrp=msrp,
+                                webhook_url=product_webhook,
+                                thread_id=product_thread,
+                            )
                         )
 
             if tasks:
@@ -143,6 +150,8 @@ class MonitorEngine:
         product_url: str,
         product_name: str,
         msrp: float | None = None,
+        webhook_url: str | None = None,
+        thread_id: str | None = None,
     ):
         """Check a single product and send alert if status changed.
 
@@ -283,7 +292,8 @@ class MonitorEngine:
             atc_url = monitor.build_atc_url(product_url)
 
             await self._alerter.send_alert(
-                result, old_status, affiliate_url, atc_url=atc_url, msrp=msrp
+                result, old_status, affiliate_url, atc_url=atc_url, msrp=msrp,
+                webhook_url=webhook_url, thread_id=thread_id,
             )
             await self.db.log_alert(
                 monitor.name,
