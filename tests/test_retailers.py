@@ -14,6 +14,12 @@ from pokeping.retailers.amazon import (
     _extract_seller,
     _is_first_party_amazon,
 )
+from pokeping.retailers.bestbuy import (
+    BestBuyMonitor,
+    extract_sku,
+    _extract_seller as _bb_extract_seller,
+    _is_first_party_bestbuy,
+)
 from pokeping.retailers.walmart import (
     WalmartMonitor,
     extract_product_id,
@@ -405,3 +411,200 @@ class TestWalmartSellerDetection:
             result = await monitor.check_scrape("https://www.walmart.com/ip/Test/12345", "Test ETB")
         assert result.status == StockStatus.OUT_OF_STOCK
         assert result.extra["seller"] == "ScalperStore"
+
+
+# ── Best Buy seller detection ─────────────────────────────────────────
+
+class TestBestBuySellerDetection:
+    def test_first_party_best_buy(self):
+        assert _is_first_party_bestbuy("Best Buy") is True
+
+    def test_first_party_bestbuy_com(self):
+        assert _is_first_party_bestbuy("BestBuy.com") is True
+
+    def test_first_party_best_buy_direct(self):
+        assert _is_first_party_bestbuy("Best Buy Direct") is True
+
+    def test_third_party(self):
+        assert _is_first_party_bestbuy("ELEGANT PRODUCTS 757 LLC") is False
+
+    def test_third_party_random_seller(self):
+        assert _is_first_party_bestbuy("ScalperShop") is False
+
+    def test_extract_seller_from_json_ld(self):
+        ld = json.dumps({
+            "offers": {"seller": {"name": "ELEGANT PRODUCTS 757 LLC"}},
+        })
+        html = f'<html><head><script type="application/ld+json">{ld}</script></head><body></body></html>'
+        soup = BeautifulSoup(html, "lxml")
+        assert _bb_extract_seller(soup) == "ELEGANT PRODUCTS 757 LLC"
+
+    def test_extract_seller_first_party_json_ld(self):
+        ld = json.dumps({
+            "offers": {"seller": {"name": "Best Buy"}},
+        })
+        html = f'<html><head><script type="application/ld+json">{ld}</script></head><body></body></html>'
+        soup = BeautifulSoup(html, "lxml")
+        assert _bb_extract_seller(soup) == "Best Buy"
+
+    def test_extract_seller_from_sold_and_shipped_text(self):
+        html = """
+        <html><body>
+          <div>Sold and shipped by ELEGANT PRODUCTS 757 LLC</div>
+        </body></html>
+        """
+        soup = BeautifulSoup(html, "lxml")
+        assert _bb_extract_seller(soup) == "ELEGANT PRODUCTS 757 LLC"
+
+    def test_extract_seller_from_fulfillment_div(self):
+        html = """
+        <html><body>
+          <div class="fulfillment-fulfillment-summary">
+            Sold and shipped by Best Buy.
+          </div>
+        </body></html>
+        """
+        soup = BeautifulSoup(html, "lxml")
+        assert _bb_extract_seller(soup) == "Best Buy"
+
+    def test_no_seller_info_returns_none(self):
+        html = "<html><body><div>Product page</div></body></html>"
+        soup = BeautifulSoup(html, "lxml")
+        assert _bb_extract_seller(soup) is None
+
+
+class TestBestBuyThirdPartyScrape:
+    def _make_monitor(self):
+        session = MagicMock()
+        config = {"request_timeout": 5}
+        return BestBuyMonitor(session, config)
+
+    @pytest.mark.asyncio
+    async def test_third_party_seller_treated_as_oos(self):
+        """Third-party marketplace seller on Best Buy should be treated as OOS."""
+        monitor = self._make_monitor()
+        json_ld = json.dumps({
+            "offers": {
+                "availability": "https://schema.org/InStock",
+                "price": "48.99",
+                "seller": {"name": "ELEGANT PRODUCTS 757 LLC"},
+            },
+            "image": "https://img.example.com/etb.jpg",
+        })
+        html = f"""
+        <html><head>
+          <script type="application/ld+json">{json_ld}</script>
+        </head><body></body></html>
+        """
+        soup = BeautifulSoup(html, "lxml")
+        with patch.object(monitor, "fetch_html", new_callable=AsyncMock, return_value=soup):
+            result = await monitor.check_scrape(
+                "https://www.bestbuy.com/product/ascended-heroes-etb/JJG2TL3XY4",
+                "Ascended Heroes ETB",
+            )
+        assert result.status == StockStatus.OUT_OF_STOCK
+        assert result.extra["seller"] == "ELEGANT PRODUCTS 757 LLC"
+
+    @pytest.mark.asyncio
+    async def test_best_buy_first_party_stays_in_stock(self):
+        """Products sold by Best Buy directly should remain IN_STOCK."""
+        monitor = self._make_monitor()
+        json_ld = json.dumps({
+            "offers": {
+                "availability": "https://schema.org/InStock",
+                "price": "49.99",
+                "seller": {"name": "Best Buy"},
+            },
+            "image": "https://img.example.com/etb.jpg",
+        })
+        html = f"""
+        <html><head>
+          <script type="application/ld+json">{json_ld}</script>
+        </head><body></body></html>
+        """
+        soup = BeautifulSoup(html, "lxml")
+        with patch.object(monitor, "fetch_html", new_callable=AsyncMock, return_value=soup):
+            result = await monitor.check_scrape(
+                "https://www.bestbuy.com/site/6590001.p?skuId=6590001",
+                "Test ETB",
+            )
+        assert result.status == StockStatus.IN_STOCK
+        assert result.extra["seller"] == "Best Buy"
+
+    @pytest.mark.asyncio
+    async def test_no_seller_info_keeps_in_stock(self):
+        """When seller info isn't available, don't downgrade status."""
+        monitor = self._make_monitor()
+        json_ld = json.dumps({
+            "offers": {
+                "availability": "https://schema.org/InStock",
+                "price": "49.99",
+            },
+        })
+        html = f"""
+        <html><head>
+          <script type="application/ld+json">{json_ld}</script>
+        </head><body></body></html>
+        """
+        soup = BeautifulSoup(html, "lxml")
+        with patch.object(monitor, "fetch_html", new_callable=AsyncMock, return_value=soup):
+            result = await monitor.check_scrape(
+                "https://www.bestbuy.com/site/6590001.p?skuId=6590001",
+                "Test ETB",
+            )
+        assert result.status == StockStatus.IN_STOCK
+        assert "seller" not in result.extra
+
+    @pytest.mark.asyncio
+    async def test_api_third_party_seller_treated_as_oos(self):
+        """API path should also verify seller and treat third-party as OOS."""
+        monitor = self._make_monitor()
+        api_response = {"availabilityStatus": "Available"}
+        json_ld = json.dumps({
+            "offers": {
+                "seller": {"name": "ELEGANT PRODUCTS 757 LLC"},
+            },
+        })
+        page_html = f"""
+        <html><head>
+          <script type="application/ld+json">{json_ld}</script>
+        </head><body></body></html>
+        """
+        page_soup = BeautifulSoup(page_html, "lxml")
+        with (
+            patch.object(monitor, "fetch_json", new_callable=AsyncMock, return_value=api_response),
+            patch.object(monitor, "fetch_html", new_callable=AsyncMock, return_value=page_soup),
+        ):
+            result = await monitor.check_api(
+                "https://www.bestbuy.com/site/6590001.p?skuId=6590001",
+                "Test ETB",
+            )
+        assert result.status == StockStatus.OUT_OF_STOCK
+        assert result.extra["seller"] == "ELEGANT PRODUCTS 757 LLC"
+
+    @pytest.mark.asyncio
+    async def test_api_first_party_stays_in_stock(self):
+        """API path with Best Buy as seller should stay IN_STOCK."""
+        monitor = self._make_monitor()
+        api_response = {"availabilityStatus": "Available"}
+        json_ld = json.dumps({
+            "offers": {
+                "seller": {"name": "Best Buy"},
+            },
+        })
+        page_html = f"""
+        <html><head>
+          <script type="application/ld+json">{json_ld}</script>
+        </head><body></body></html>
+        """
+        page_soup = BeautifulSoup(page_html, "lxml")
+        with (
+            patch.object(monitor, "fetch_json", new_callable=AsyncMock, return_value=api_response),
+            patch.object(monitor, "fetch_html", new_callable=AsyncMock, return_value=page_soup),
+        ):
+            result = await monitor.check_api(
+                "https://www.bestbuy.com/site/6590001.p?skuId=6590001",
+                "Test ETB",
+            )
+        assert result.status == StockStatus.IN_STOCK
+        assert result.extra["seller"] == "Best Buy"

@@ -2,6 +2,11 @@
 
 Best Buy has a public product availability API endpoint that returns
 stock status for a given SKU.
+
+Best Buy also has a third-party marketplace.  Products listed by
+marketplace sellers (not "Best Buy" themselves) are excluded from
+in-stock alerts to avoid sending users to overpriced third-party
+listings.
 """
 
 from __future__ import annotations
@@ -16,6 +21,62 @@ logger = logging.getLogger(__name__)
 
 # Best Buy's public availability API
 BESTBUY_API = "https://www.bestbuy.com/api/tcfb/model.json"
+
+# Seller names that indicate Best Buy is the direct seller
+_BESTBUY_FIRST_PARTY = {"best buy", "bestbuy", "bestbuy.com", "best buy direct"}
+
+
+def _is_first_party_bestbuy(seller: str) -> bool:
+    """Check if the seller is Best Buy itself (not a marketplace third-party)."""
+    return seller.lower().strip().rstrip(".") in _BESTBUY_FIRST_PARTY
+
+
+def _extract_seller(soup) -> str | None:
+    """Extract seller name from a Best Buy product page.
+
+    Checks multiple locations where Best Buy displays the seller:
+      1. JSON-LD structured data (offers.seller.name)
+      2. "Sold and shipped by ..." text on the page
+      3. Fulfillment/seller div elements
+    Returns the seller name or None if not determinable.
+    """
+    # Method 1: JSON-LD seller
+    json_ld = soup.find("script", {"type": "application/ld+json"})
+    if json_ld and json_ld.string:
+        try:
+            data = json.loads(json_ld.string)
+            if isinstance(data, list):
+                data = data[0]
+            offers = data.get("offers", {})
+            if isinstance(offers, list):
+                offers = offers[0] if offers else {}
+            seller = offers.get("seller", {})
+            if isinstance(seller, dict):
+                name = seller.get("name", "")
+                if name:
+                    return name.strip()
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            pass
+
+    # Method 2: "Sold and shipped by" text
+    sold_by = soup.find(string=re.compile(r"[Ss]old and [Ss]hipped by"))
+    if sold_by:
+        match = re.search(r"[Ss]old and [Ss]hipped by\s+(.+?)\.?\s*$", sold_by.strip())
+        if match:
+            return match.group(1).strip()
+
+    # Method 3: Fulfillment/seller section div
+    for cls in (r"fulfillment-fulfillment-summary", r"seller-information"):
+        seller_div = soup.find("div", {"class": re.compile(cls, re.I)})
+        if seller_div:
+            text = seller_div.get_text(" ", strip=True)
+            match = re.search(
+                r"[Ss]old (?:and [Ss]hipped )?by\s+(.+?)(?:\.|$)", text
+            )
+            if match:
+                return match.group(1).strip()
+
+    return None
 
 
 def extract_sku(url_or_sku: str) -> str | None:
@@ -58,6 +119,9 @@ class BestBuyMonitor(RetailerMonitor):
 
         The fulfillment API only works with numeric SKUs.
         New-format alphanumeric IDs must use the scraper.
+
+        When the API reports in-stock, we verify via a page scrape that
+        the seller is Best Buy (not a third-party marketplace seller).
         """
         sku = extract_sku(product_url)
         if not sku or not sku.isdigit():
@@ -87,12 +151,38 @@ class BestBuyMonitor(RetailerMonitor):
 
         product_page = f"https://www.bestbuy.com/site/{sku}.p?skuId={sku}"
 
+        # The fulfillment API doesn't return seller info, so when it
+        # reports in-stock we scrape the page to verify the seller is
+        # Best Buy and not a third-party marketplace seller.
+        extra: dict = {}
+        if status == StockStatus.IN_STOCK:
+            try:
+                soup = await self.fetch_html(product_page)
+                seller = _extract_seller(soup)
+                if seller:
+                    extra["seller"] = seller
+                    if not _is_first_party_bestbuy(seller):
+                        logger.info(
+                            "Best Buy API reported in-stock for '%s' but seller "
+                            "is third-party '%s' — treating as OOS",
+                            product_name,
+                            seller,
+                        )
+                        status = StockStatus.OUT_OF_STOCK
+            except Exception as exc:
+                logger.debug(
+                    "Could not verify Best Buy seller for %s: %s",
+                    product_name,
+                    exc,
+                )
+
         return ProductResult(
             retailer=self.name,
             product_name=product_name,
             url=product_page,
             status=status,
             price=None,
+            extra=extra,
         )
 
     async def check_scrape(self, product_url: str, product_name: str) -> ProductResult:
@@ -183,6 +273,19 @@ class BestBuyMonitor(RetailerMonitor):
             if img:
                 image_url = img.get("src")
 
+        # Seller detection: only count as in-stock if sold by Best Buy
+        extra: dict = {}
+        seller = _extract_seller(soup)
+        if seller:
+            extra["seller"] = seller
+            if status == StockStatus.IN_STOCK and not _is_first_party_bestbuy(seller):
+                logger.info(
+                    "Best Buy product '%s' sold by third-party '%s' — treating as OOS",
+                    product_name,
+                    seller,
+                )
+                status = StockStatus.OUT_OF_STOCK
+
         return ProductResult(
             retailer=self.name,
             product_name=product_name,
@@ -190,6 +293,7 @@ class BestBuyMonitor(RetailerMonitor):
             status=status,
             price=price_float,
             image_url=image_url,
+            extra=extra,
         )
 
     def build_affiliate_url(self, url: str) -> str:
