@@ -51,6 +51,11 @@ def parse_args():
         help="Interactive mode: add a product to monitor",
     )
     parser.add_argument(
+        "--test-alert",
+        action="store_true",
+        help="Send a test in-stock alert to Discord and exit",
+    )
+    parser.add_argument(
         "--store-check",
         action="store_true",
         help="Check in-store stock at nearby Target/Walmart stores",
@@ -113,6 +118,54 @@ def add_product_interactive(config_path: str | None):
 
     print(f"\nAdded '{name}' with {len(urls)} retailer(s) to {path}")
     print("Run `python -m pokeping` to start monitoring.")
+
+
+async def run_test_alert(config: dict):
+    """Send a fake in-stock alert to verify Discord webhook and embed formatting."""
+    from .discord import DiscordAlerter
+    from .retailers.base import ProductResult, StockStatus
+
+    webhook = config.get("discord_webhook_url", "")
+    if not webhook:
+        print("ERROR: No discord_webhook_url configured. Cannot send test alert.")
+        sys.exit(1)
+
+    # Pick the first configured product, or use a dummy
+    products = config.get("products", [])
+    if products:
+        product = products[0]
+        name = product.get("name", "Test Product")
+        msrp = product.get("msrp")
+        urls = product.get("urls", {})
+        # Pick the first URL
+        retailer = next(iter(urls), "amazon")
+        url = urls.get(retailer, "https://www.example.com/test-product")
+    else:
+        name = "Phantasmal Flames Elite Trainer Box"
+        retailer = "amazon"
+        url = "https://www.amazon.com/dp/B0FPM3LQJ4"
+        msrp = 49.99
+
+    result = ProductResult(
+        retailer=retailer,
+        product_name=name,
+        url=url,
+        status=StockStatus.IN_STOCK,
+        price=msrp,
+        image_url=None,
+    )
+
+    async with aiohttp.ClientSession() as session:
+        alerter = DiscordAlerter(webhook, session)
+        await alerter.send_alert(
+            result,
+            old_status="out_of_stock",
+            affiliate_url=url,
+            atc_url=None,
+            msrp=msrp,
+        )
+
+    print(f"Test alert sent for '{name}' @ {retailer}. Check your Discord!")
 
 
 async def run(config: dict):
@@ -198,6 +251,10 @@ def main():
         return
 
     config = load_config(args.config)
+
+    if args.test_alert:
+        asyncio.run(run_test_alert(config))
+        return
 
     if args.store_check:
         zip_code = args.zip
