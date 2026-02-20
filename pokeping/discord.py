@@ -88,10 +88,10 @@ class DiscordAlerter:
         desc_lines.append(f"[**Product Page →**]({link})")
         description = "\n".join(desc_lines)
 
-        # Build embed
+        # Build embed — title always links to product page (ATC is in description)
         embed = {
             "title": f"{icon} {result.product_name}",
-            "url": atc_url or link,
+            "url": link,
             "color": color,
             "description": description,
             "fields": [

@@ -198,6 +198,8 @@ class BestBuyMonitor(RetailerMonitor):
 
     def build_atc_url(self, product_url: str) -> str | None:
         sku = extract_sku(product_url)
-        if not sku:
+        if not sku or not sku.isdigit():
+            # ATC API only works with numeric SKUs; new alphanumeric IDs
+            # don't have a direct add-to-cart link.
             return None
         return f"https://api.bestbuy.com/click/-/{sku}/cart"

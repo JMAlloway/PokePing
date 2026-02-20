@@ -257,24 +257,6 @@ class MonitorEngine:
         elif new_status == StockStatus.PRE_ORDER.value and old_status != StockStatus.IN_STOCK.value:
             # Pre-order opened (and wasn't previously in stock)
             should_alert = True
-        elif new_status == StockStatus.OUT_OF_STOCK.value and old_status == StockStatus.IN_STOCK.value:
-            # Went out of stock — only alert if it was in stock at a
-            # reasonable (near-MSRP) price.  Don't notify when scalper-priced
-            # third-party listings disappear.
-            if msrp:
-                last_price = await self.db.get_last_price(monitor.name, product_url)
-                if last_price and last_price > msrp * 1.05:
-                    logger.info(
-                        "Suppressing OOS alert for %s @ %s: last price $%.2f was above MSRP $%.2f",
-                        product_name,
-                        monitor.name,
-                        last_price,
-                        msrp,
-                    )
-                else:
-                    should_alert = True
-            else:
-                should_alert = True
 
         # MSRP price filtering: suppress in-stock alerts for above-MSRP prices
         if should_alert and msrp and result.price:
