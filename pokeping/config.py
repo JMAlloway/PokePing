@@ -28,12 +28,12 @@ def load_config(path: str | None = None) -> dict:
         logger.warning("Config file not found: %s — using defaults", config_path)
         config = {}
     else:
-        with open(config_path) as f:
+        with open(config_path, encoding="utf-8") as f:
             config = yaml.safe_load(f) or {}
 
     # Apply local overrides
     if LOCAL_CONFIG_PATH.exists():
-        with open(LOCAL_CONFIG_PATH) as f:
+        with open(LOCAL_CONFIG_PATH, encoding="utf-8") as f:
             local = yaml.safe_load(f) or {}
         config = _deep_merge(config, local)
 

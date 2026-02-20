@@ -210,11 +210,11 @@ products:
     urls:
       tcgplayer: "https://www.tcgplayer.com/product/654147/pokemon-me02-phantasmal-flames-phantasmal-flames-premium-checklane-blister-blaziken"
 
-  # ════════════════════════════════════════════════════════════════════
+  # ====================================================================
   #  ASCENDED HEROES  (ME2.5)
-  #  Alerts for this product line go to a separate Discord thread.
-  #  Set discord_thread_id below OR use a different discord_webhook_url.
-  # ════════════════════════════════════════════════════════════════════
+  #  Alerts for this product line go to a separate Discord channel.
+  #  Set discord_webhook_url below to route to a different webhook.
+  # ====================================================================
 
   # ── Ascended Heroes: 2-Pack Collection (Erika) ──────────────────────
   - name: "Ascended Heroes 2-Pack Collection (Erika)"
