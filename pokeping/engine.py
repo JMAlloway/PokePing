@@ -80,9 +80,7 @@ class MonitorEngine:
             proxy_rotator.active_count,
         )
 
-        await self._alerter.send_startup_message(
-            len(products), len(self._monitors)
-        )
+        await self._send_startup_messages(products)
 
         self._running = True
         await self._run_loop()
@@ -94,6 +92,33 @@ class MonitorEngine:
             await self._session.close()
         await self.db.close()
         logger.info("PokePing stopped")
+
+    async def _send_startup_messages(self, products: list[dict]):
+        """Send a startup message to each unique webhook channel.
+
+        Products with a per-product webhook go to that channel only.
+        Products without one go to the global channel.
+        """
+        retailer_count = len(self._monitors)
+
+        # Group products by their (webhook, thread) destination
+        # key = (webhook_url or "", thread_id or "")
+        channels: dict[tuple[str, str], list[str]] = {}
+        for product in products:
+            pw = product.get("discord_webhook_url", "")
+            pt = product.get("discord_thread_id", "")
+            name = product.get("name", "Unknown Product")
+            channels.setdefault((pw, pt), []).append(name)
+
+        # Send startup message to each channel
+        for (webhook, thread), names in channels.items():
+            await self._alerter.send_startup_message(
+                product_count=len(names),
+                retailer_count=retailer_count,
+                product_names=names,
+                webhook_url=webhook or None,
+                thread_id=thread or None,
+            )
 
     async def _run_loop(self):
         """Main polling loop."""

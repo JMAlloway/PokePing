@@ -179,24 +179,55 @@ class DiscordAlerter:
         except Exception as exc:
             logger.error("Failed to send Discord alert: %s", exc)
 
-    async def send_startup_message(self, product_count: int, retailer_count: int):
-        """Send a startup notification."""
-        if not self.webhook_url:
+    async def send_startup_message(
+        self,
+        product_count: int,
+        retailer_count: int,
+        product_names: list[str] | None = None,
+        webhook_url: str | None = None,
+        thread_id: str | None = None,
+    ):
+        """Send a startup notification to a specific webhook.
+
+        Parameters
+        ----------
+        product_count : int
+            Number of products being monitored in this channel.
+        retailer_count : int
+            Number of retailers being monitored.
+        product_names : list[str], optional
+            Names of products for this channel (shown in the embed).
+        webhook_url : str, optional
+            Override webhook URL (for per-product channels).
+        thread_id : str, optional
+            Discord thread ID for per-product channels.
+        """
+        url_to_use = webhook_url or self.webhook_url
+        if not url_to_use:
             return
+
+        if thread_id:
+            sep = "&" if "?" in url_to_use else "?"
+            url_to_use = f"{url_to_use}{sep}thread_id={thread_id}"
+
+        desc = (
+            f"Monitoring **{product_count}** products across "
+            f"**{retailer_count}** retailers."
+        )
+        if product_names:
+            listing = "\n".join(f"• {n}" for n in product_names)
+            desc += f"\n\n{listing}"
 
         embed = {
             "title": "⚡ PokePing Started",
-            "description": (
-                f"Monitoring **{product_count}** products across "
-                f"**{retailer_count}** retailers."
-            ),
+            "description": desc,
             "color": 0xFFD700,
             "footer": {"text": "PokePing • Free Pokemon TCG Alerts"},
         }
 
         try:
             async with self.session.post(
-                self.webhook_url, json={"username": "PokePing", "embeds": [embed]}
+                url_to_use, json={"username": "PokePing", "embeds": [embed]}
             ) as resp:
                 if resp.status >= 400:
                     text = await resp.text()
