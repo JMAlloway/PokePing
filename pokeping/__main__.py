@@ -121,51 +121,79 @@ def add_product_interactive(config_path: str | None):
 
 
 async def run_test_alert(config: dict):
-    """Send a fake in-stock alert to verify Discord webhook and embed formatting."""
+    """Send a fake in-stock alert to verify Discord webhook and embed formatting.
+
+    Sends a test alert to the global webhook AND to each unique per-product
+    webhook so you can verify every channel receives alerts.
+    """
     from .discord import DiscordAlerter
     from .retailers.base import ProductResult, StockStatus
 
-    webhook = config.get("discord_webhook_url", "")
-    if not webhook:
-        print("ERROR: No discord_webhook_url configured. Cannot send test alert.")
+    global_webhook = config.get("discord_webhook_url", "")
+    products = config.get("products", [])
+
+    # Collect all unique webhooks to test: (webhook_url, thread_id, product)
+    targets: list[tuple[str, str, dict]] = []
+
+    # Global webhook — pick the first product without a per-product override
+    for p in products:
+        if not p.get("discord_webhook_url"):
+            targets.append((global_webhook, "", p))
+            break
+    else:
+        # No product without override; still test global if configured
+        if global_webhook:
+            targets.append((global_webhook, "", {
+                "name": "Phantasmal Flames Elite Trainer Box",
+                "msrp": 49.99,
+                "urls": {"amazon": "https://www.amazon.com/dp/B0FPM3LQJ4"},
+            }))
+
+    # Per-product webhooks — one test per unique (webhook, thread) pair
+    seen: set[tuple[str, str]] = set()
+    for p in products:
+        pw = p.get("discord_webhook_url", "")
+        pt = p.get("discord_thread_id", "")
+        if pw and (pw, pt) not in seen:
+            seen.add((pw, pt))
+            targets.append((pw, pt, p))
+
+    if not targets:
+        print("ERROR: No Discord webhook URLs configured. Cannot send test alert.")
         sys.exit(1)
 
-    # Pick the first configured product, or use a dummy
-    products = config.get("products", [])
-    if products:
-        product = products[0]
-        name = product.get("name", "Test Product")
-        msrp = product.get("msrp")
-        urls = product.get("urls", {})
-        # Pick the first URL
-        retailer = next(iter(urls), "amazon")
-        url = urls.get(retailer, "https://www.example.com/test-product")
-    else:
-        name = "Phantasmal Flames Elite Trainer Box"
-        retailer = "amazon"
-        url = "https://www.amazon.com/dp/B0FPM3LQJ4"
-        msrp = 49.99
-
-    result = ProductResult(
-        retailer=retailer,
-        product_name=name,
-        url=url,
-        status=StockStatus.IN_STOCK,
-        price=msrp,
-        image_url=None,
-    )
-
     async with aiohttp.ClientSession() as session:
-        alerter = DiscordAlerter(webhook, session)
-        await alerter.send_alert(
-            result,
-            old_status="out_of_stock",
-            affiliate_url=url,
-            atc_url=None,
-            msrp=msrp,
-        )
+        alerter = DiscordAlerter(global_webhook, session)
 
-    print(f"Test alert sent for '{name}' @ {retailer}. Check your Discord!")
+        for webhook, thread_id, product in targets:
+            name = product.get("name", "Test Product")
+            msrp = product.get("msrp")
+            urls = product.get("urls", {})
+            retailer = next(iter(urls), "amazon")
+            url = urls.get(retailer, "https://www.example.com/test-product")
+
+            result = ProductResult(
+                retailer=retailer,
+                product_name=name,
+                url=url,
+                status=StockStatus.IN_STOCK,
+                price=msrp,
+                image_url=None,
+            )
+
+            await alerter.send_alert(
+                result,
+                old_status="out_of_stock",
+                affiliate_url=url,
+                atc_url=None,
+                msrp=msrp,
+                webhook_url=webhook or None,
+                thread_id=thread_id or None,
+            )
+            label = "global" if not product.get("discord_webhook_url") else "per-product"
+            print(f"Test alert sent ({label}): '{name}' @ {retailer}")
+
+    print("Done! Check your Discord channels.")
 
 
 async def run(config: dict):
