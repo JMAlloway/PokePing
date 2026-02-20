@@ -219,8 +219,8 @@ products:
   # ── Ascended Heroes: 2-Pack Collection (Erika) ──────────────────────
   - name: "Ascended Heroes 2-Pack Collection (Erika)"
     msrp: 9.99
-    discord_webhook_url: ""   # ← paste Ascended Heroes webhook here (or use thread_id)
-    discord_thread_id: ""     # ← paste Discord thread ID here
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
+    discord_thread_id: ""
     urls:
       amazon: "https://www.amazon.com/dp/B0G547KBNB"
       bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-2-pack-blister-styles-may-vary/JJG2TLXP48"
@@ -232,7 +232,7 @@ products:
   # ── Ascended Heroes: 2-Pack Collection (Larry) ──────────────────────
   - name: "Ascended Heroes 2-Pack Collection (Larry)"
     msrp: 9.99
-    discord_webhook_url: ""
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
     discord_thread_id: ""
     urls:
       tcgplayer: "https://www.tcgplayer.com/product/666907/pokemon-me-ascended-heroes-mega-evolution-ascended-heroes-collection-larry"
@@ -241,7 +241,7 @@ products:
   # ── Ascended Heroes: Tech Sticker Collection (Charmander) ───────────
   - name: "Ascended Heroes Tech Sticker Collection (Charmander)"
     msrp: 15.99
-    discord_webhook_url: ""
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
     discord_thread_id: ""
     urls:
       amazon: "https://www.amazon.com/dp/B0G3CPRRCT"
@@ -254,7 +254,7 @@ products:
   # ── Ascended Heroes: Tech Sticker Collection (Gastly) ───────────────
   - name: "Ascended Heroes Tech Sticker Collection (Gastly)"
     msrp: 15.99
-    discord_webhook_url: ""
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
     discord_thread_id: ""
     urls:
       bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-tech-sticker-collection-gastly/JJG2TL3JJT"
@@ -264,7 +264,7 @@ products:
   # ── Ascended Heroes: Elite Trainer Box ──────────────────────────────
   - name: "Ascended Heroes Elite Trainer Box"
     msrp: 49.99
-    discord_webhook_url: ""
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
     discord_thread_id: ""
     urls:
       amazon: "https://www.amazon.com/dp/B0G3CY83L5"
@@ -277,7 +277,7 @@ products:
   # ── Ascended Heroes: Pokemon Center ETB (Exclusive) ─────────────────
   - name: "Ascended Heroes Pokemon Center ETB"
     msrp: 59.99
-    discord_webhook_url: ""
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
     discord_thread_id: ""
     urls:
       pokemoncenter: "https://www.pokemoncenter.com/product/10-10315-108/pokemon-tcg-mega-evolution-ascended-heroes-pokemon-center-elite-trainer-box"
@@ -286,7 +286,7 @@ products:
   # ── Ascended Heroes: Mini Tin (Styles May Vary) ─────────────────────
   - name: "Ascended Heroes Mini Tin"
     msrp: 9.99
-    discord_webhook_url: ""
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
     discord_thread_id: ""
     urls:
       amazon: "https://www.amazon.com/dp/B0FHQCKHHP"
@@ -298,7 +298,7 @@ products:
   # ── Ascended Heroes: Booster Bundle (6 Packs) ──────────────────────
   - name: "Ascended Heroes Booster Bundle (6 Packs)"
     msrp: 26.94
-    discord_webhook_url: ""
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
     discord_thread_id: ""
     urls:
       bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-booster-bundle/JJG2TL3JP8"
@@ -310,7 +310,7 @@ products:
   # ── Ascended Heroes: Premium Poster Collection (Styles May Vary) ────
   - name: "Ascended Heroes Premium Poster Collection"
     msrp: 49.99
-    discord_webhook_url: ""
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
     discord_thread_id: ""
     urls:
       amazon: "https://www.amazon.com/dp/B0G4XJPN8Q"
@@ -322,7 +322,7 @@ products:
   # ── Ascended Heroes: First Partners Deluxe Pin Collection ───────────
   - name: "Ascended Heroes First Partners Deluxe Pin Collection"
     msrp: 24.99
-    discord_webhook_url: ""
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
     discord_thread_id: ""
     urls:
       bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-first-partners-deluxe-pin-collection/JJG2TL3J84"
@@ -331,7 +331,7 @@ products:
   # ── Ascended Heroes: Mega ex Box (Styles May Vary) ──────────────────
   - name: "Ascended Heroes Mega ex Box"
     msrp: 21.99
-    discord_webhook_url: ""
+    discord_webhook_url: "https://discord.com/api/webhooks/1474242335176003677/3DXBK_iRLWkvRLXETa4qcUl9ecWOiPMuiQOeX9NHGAkfJTkJDVu9h-Vg0Y0yGfuuDqEU"
     discord_thread_id: ""
     urls:
       bestbuy: "https://www.bestbuy.com/product/pokemon-trading-card-game-mega-evolution-ascended-heroes-ex-box-styles-may-vary/JJG2TL3JLK"
